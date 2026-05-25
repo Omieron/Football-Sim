@@ -26,8 +26,10 @@ func GenerateFixtures(leagueID int, teams []model.Team) []model.Match {
 		teams = rotateTeams(teams)
 	}
 
-	// Second round (home/away sides are swapped)
+	// Second round — same week structure, home/away swapped
 	firstRoundMatches := matches
+	matchesPerWeek := n / 2
+	weekCount := 0
 	for _, m := range firstRoundMatches {
 		matches = append(matches, model.Match{
 			LeagueID:   leagueID,
@@ -35,8 +37,10 @@ func GenerateFixtures(leagueID int, teams []model.Team) []model.Match {
 			HomeTeamID: m.AwayTeamID,
 			AwayTeamID: m.HomeTeamID,
 		})
-		if len(matches)%len(firstRoundMatches) == 0 {
+		weekCount++
+		if weekCount >= matchesPerWeek {
 			week++
+			weekCount = 0
 		}
 	}
 

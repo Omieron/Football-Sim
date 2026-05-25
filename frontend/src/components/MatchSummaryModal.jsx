@@ -52,9 +52,14 @@ export default function MatchSummaryModal({ match, onClose }) {
         <div
           id="match-summary-title"
           style={{
-          fontSize: 20, fontWeight: 700, letterSpacing: '-0.03em',
-          color: 'var(--cream)', marginBottom: 20,
-        }}>
+            fontSize: 18,
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            color: 'var(--cream)',
+            marginBottom: 20,
+            lineHeight: 1.25,
+          }}
+        >
           {match.home_team_name} {match.home_goals}–{match.away_goals} {match.away_team_name}
         </div>
 

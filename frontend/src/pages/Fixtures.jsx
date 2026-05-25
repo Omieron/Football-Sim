@@ -13,6 +13,7 @@ export default function Fixtures() {
   const [viewWeek, setViewWeek] = useState(1)
   const [loading, setLoading] = useState(false)
   const [summaryMatch, setSummaryMatch] = useState(null)
+  const [resetting, setResetting] = useState(false)
   const [headerRef, headerVisible] = useReveal()
 
   useEffect(() => {
@@ -43,6 +44,40 @@ export default function Fixtures() {
   }, [selectedId])
 
   const totalWeeks = fixtures.reduce((m, x) => Math.max(m, x.week), 0)
+
+  const teamIds = new Set()
+  fixtures.forEach(m => {
+    teamIds.add(m.home_team_id)
+    teamIds.add(m.away_team_id)
+  })
+  const teamCount = teamIds.size
+  const expectedWeeks = teamCount > 1 ? (teamCount - 1) * 2 : 0
+  const matchesPerWeek = teamCount > 1 ? teamCount / 2 : 0
+  const scheduleIncomplete = teamCount > 1 && totalWeeks > 0 && totalWeeks < expectedWeeks
+
+  async function regenerateSchedule() {
+    if (!selectedId) return
+    const ok = window.confirm(
+      'Regenerate the full home-and-away schedule? All played results, events and standings will be cleared.'
+    )
+    if (!ok) return
+    setResetting(true)
+    try {
+      await api.delete(`/api/leagues/${selectedId}/reset`)
+      const [lg, fx] = await Promise.all([
+        api.get(`/api/leagues/${selectedId}`),
+        api.get(`/api/leagues/${selectedId}/fixtures`),
+      ])
+      const lgData = lg.data.data
+      const allMatches = fx.data.data || []
+      const maxWeek = allMatches.reduce((m, x) => Math.max(m, x.week), 0)
+      setLeague(lgData)
+      setFixtures(allMatches)
+      setViewWeek(1)
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const grouped = fixtures.reduce((acc, m) => {
     if (!acc[m.week]) acc[m.week] = []
@@ -87,6 +122,31 @@ export default function Fixtures() {
         </div>
       )}
 
+      {!loading && scheduleIncomplete && (
+        <div style={{
+          marginBottom: 20,
+          padding: '14px 16px',
+          border: '1px solid var(--pink)',
+          background: 'rgba(255,31,90,0.06)',
+        }}>
+          <p style={{ fontSize: 12, lineHeight: 1.55, color: 'rgba(237,232,220,0.65)', marginBottom: 10 }}>
+            This league has <strong style={{ color: 'var(--cream)' }}>{totalWeeks} matchdays</strong> but
+            {' '}<strong style={{ color: 'var(--cream)' }}>{teamCount} teams</strong> need a full
+            home-and-away season — <strong style={{ color: 'var(--acid)' }}>{expectedWeeks} matchdays</strong>
+            {' '}({matchesPerWeek} matches per week).
+          </p>
+          <button
+            type="button"
+            className="btn-outline"
+            disabled={resetting}
+            onClick={regenerateSchedule}
+            style={{ fontSize: 10, padding: '10px 18px' }}
+          >
+            {resetting ? 'Regenerating…' : 'Regenerate full schedule'}
+          </button>
+        </div>
+      )}
+
       {!loading && totalWeeks > 0 && (
         <>
           <div className="fixtures-week-bar">
@@ -98,10 +158,20 @@ export default function Fixtures() {
                 )}
               </div>
               <div style={{ fontSize: 10, color: 'rgba(237,232,220,0.25)', letterSpacing: '0.06em' }}>
-                Week {viewWeek} of {totalWeeks}
+                Week {viewWeek} of {scheduleIncomplete ? expectedWeeks : totalWeeks}
+                {scheduleIncomplete && (
+                  <span style={{ marginLeft: 6, color: 'var(--pink)' }}>
+                    (saved as {totalWeeks})
+                  </span>
+                )}
                 {league && (
                   <span style={{ marginLeft: 8, color: 'rgba(237,232,220,0.18)' }}>
                     · {league.current_week} played
+                  </span>
+                )}
+                {weekMatches.length > 0 && (
+                  <span style={{ marginLeft: 8, color: 'rgba(237,232,220,0.18)' }}>
+                    · {weekMatches.length} matches
                   </span>
                 )}
               </div>
@@ -120,7 +190,7 @@ export default function Fixtures() {
               <button
                 type="button"
                 className="fixtures-week-btn"
-                disabled={viewWeek >= totalWeeks}
+                disabled={viewWeek >= (scheduleIncomplete ? expectedWeeks : totalWeeks)}
                 onClick={() => setViewWeek(w => w + 1)}
                 aria-label="Next matchday"
               >
