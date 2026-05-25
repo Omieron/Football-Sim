@@ -21,7 +21,7 @@ function StatListPanel({ rows, emptyText, children }) {
 
   return (
     <div>
-      <div className="stat-list-scroll">
+      <div className="stat-list-scroll scroll-y">
         {children(visible)}
       </div>
       {rows.length > LIST_INITIAL && (
@@ -211,16 +211,6 @@ export default function Stats() {
         @media (max-width: 1100px) { .stats-grid { grid-template-columns: 1fr; gap: 40px; } }
         .stat-list-scroll {
           max-height: min(380px, 50vh);
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding-right: 6px;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(237,232,220,0.15) transparent;
-        }
-        .stat-list-scroll::-webkit-scrollbar { width: 4px; }
-        .stat-list-scroll::-webkit-scrollbar-thumb {
-          background: rgba(237,232,220,0.15);
-          border-radius: 2px;
         }
         .stat-list-btn {
           background: transparent;

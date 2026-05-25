@@ -42,9 +42,9 @@ export default function MatchSummaryModal({ match, onClose }) {
       background: 'rgba(10,10,10,0.93)', backdropFilter: 'blur(12px)',
       padding: 24,
     }}>
-      <div style={{
+      <div className="scroll-y" style={{
         width: '100%', maxWidth: 560,
-        maxHeight: '90vh', overflowY: 'auto',
+        maxHeight: '90vh',
         padding: '32px 28px',
         background: 'var(--dark)',
         border: '1px solid var(--border)',

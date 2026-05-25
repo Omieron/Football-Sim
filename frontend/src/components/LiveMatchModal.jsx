@@ -382,11 +382,10 @@ export default function LiveMatchModal({ matches, onClose }) {
       background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(24px)',
       padding: 24,
     }}>
-      <div style={{
+      <div className="scroll-y" style={{
         width: '100%',
         maxWidth: view === 'detail' ? 640 : 520,
         maxHeight: '90vh',
-        overflowY: 'auto',
         padding: view === 'detail' ? '40px 36px' : '36px 32px',
         background: 'var(--dark)',
         border: '1px solid var(--border)',

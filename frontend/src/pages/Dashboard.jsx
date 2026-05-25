@@ -476,12 +476,46 @@ export default function Dashboard() {
       <style>{`
         .dash-wrap  { max-width: 1280px; margin: 0 auto; width: 100%; }
         .dash-grid  { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
-        .dash-left  { padding-right: 40px; border-right: 1px solid var(--border); min-width: 0; }
-        .dash-right { padding-left: 40px; display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+        .dash-viewport {
+          display: flex;
+          flex-direction: column;
+          min-height: calc(100vh - 56px - 48px);
+          max-height: calc(100vh - 56px - 48px);
+          overflow: hidden;
+        }
+        .dash-header { flex-shrink: 0; }
+        .dash-grid-fill {
+          flex: 1;
+          min-height: 0;
+          align-items: stretch;
+        }
+        .dash-left  { padding-right: 40px; border-right: 1px solid var(--border); min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+        .dash-left-scroll {
+          flex: 1;
+          min-height: 0;
+        }
+        .dash-right-scroll {
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
+        }
+        .dash-right { padding-left: 40px; display: flex; flex-direction: column; min-width: 0; min-height: 0; flex: 1; }
         @media (max-width: 900px) {
+          .dash-viewport {
+            min-height: 0;
+            max-height: none;
+            overflow: visible;
+          }
           .dash-grid  { grid-template-columns: 1fr; }
           .dash-left  { padding-right: 0; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 32px; margin-bottom: 32px; }
           .dash-right { padding-left: 0; }
+          .dash-left-scroll,
+          .dash-right-scroll {
+            max-height: min(420px, 55vh);
+            flex: none;
+          }
         }
         @keyframes bannerIn {
           from { opacity: 0; transform: translateY(6px); }
@@ -494,7 +528,8 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Top bar: league name + controls ── */}
-      <div className="dash-wrap" style={{
+      <div className="dash-viewport">
+      <div className="dash-wrap dash-header" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: 16,
         paddingTop: 24, paddingBottom: 20,
@@ -549,33 +584,38 @@ export default function Dashboard() {
 
       {/* ── Main grid ── */}
       {league && (
-        <div className="dash-wrap dash-grid">
+        <div className="dash-wrap dash-grid dash-grid-fill">
           {/* Left: Standings */}
           <div className="dash-left">
-            <div className="label" style={{ marginBottom: 14 }}>Standings</div>
-            <StandingsTable standings={standings} />
+            <div className="label" style={{ marginBottom: 14, flexShrink: 0 }}>Standings</div>
+            <div className="dash-left-scroll scroll-y">
+              <StandingsTable standings={standings} />
+            </div>
           </div>
 
           {/* Right: sidebar */}
           <div className="dash-right">
-            <MatchBanner
-              matches={weekMatches}
-              totalWeeks={totalWeeks}
-              viewWeek={viewWeek}
-              setViewWeek={setViewWeek}
-              isNextWeekView={isNextWeekView}
-            />
-            <StatsRotator
-              scorers={topScorers}
-              assists={topAssists}
-              mostCards={mostCards}
-              leagueId={selectedId}
-              loading={statsLoading}
-            />
-            {predictions.length > 0 && <PredictionWidget predictions={predictions} />}
+            <div className="dash-right-scroll scroll-y">
+              <MatchBanner
+                matches={weekMatches}
+                totalWeeks={totalWeeks}
+                viewWeek={viewWeek}
+                setViewWeek={setViewWeek}
+                isNextWeekView={isNextWeekView}
+              />
+              <StatsRotator
+                scorers={topScorers}
+                assists={topAssists}
+                mostCards={mostCards}
+                leagueId={selectedId}
+                loading={statsLoading}
+              />
+              <PredictionWidget predictions={predictions} currentWeek={league.current_week} />
+            </div>
           </div>
         </div>
       )}
+      </div>
 
       {liveMatches && <LiveMatchModal matches={liveMatches} onClose={handleModalClose} />}
     </>

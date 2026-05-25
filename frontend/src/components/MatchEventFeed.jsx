@@ -127,13 +127,12 @@ export default function MatchEventFeed({ events, match, reverse = false, halftim
         </span>
       </div>
 
-      <div style={{
+      <div className="scroll-y" style={{
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         gap: 6,
         maxHeight: 340,
-        overflowY: 'auto',
         padding: '4px 0',
       }}>
         {hasSecondHalf && (

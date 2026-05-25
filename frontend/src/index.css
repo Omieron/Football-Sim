@@ -10,11 +10,18 @@
   --mid:    #1a1a1a;
   --border: rgba(237,232,220,0.1);
   --dim:    rgba(237,232,220,0.04);
+  --scrollbar-size: 8px;
+  --scrollbar-track: rgba(237,232,220,0.06);
+  --scrollbar-thumb: rgba(237,232,220,0.22);
+  --scrollbar-thumb-hover: rgba(200,255,0,0.35);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+}
 
 body {
   background: var(--black);
@@ -23,7 +30,14 @@ body {
   font-weight: 400;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow: hidden;
+  height: 100%;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Grain overlay ─────────────────────────────────── */
@@ -194,7 +208,88 @@ body::after {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Scrollbar ─────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); }
+/* ── Page scroll (bar sits in reserved lane, never over content) ── */
+.app-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding: 0 calc(12px + var(--scrollbar-size) + 10px) 48px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.app-main::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  background: var(--scrollbar-track);
+}
+
+.app-main::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+.app-main::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.app-main::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ── Inner scroll regions ── */
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+  padding-inline-end: calc(var(--scrollbar-size) + 12px);
+}
+
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+  padding-block-end: calc(var(--scrollbar-size) + 12px);
+}
+
+.scroll-y,
+.scroll-x {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.scroll-y::-webkit-scrollbar,
+.scroll-x::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+  background: var(--scrollbar-track);
+}
+
+.scroll-y::-webkit-scrollbar-track,
+.scroll-x::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+.scroll-y::-webkit-scrollbar-thumb,
+.scroll-x::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.scroll-y::-webkit-scrollbar-thumb:hover,
+.scroll-x::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+@supports not (scrollbar-gutter: stable) {
+  .app-main {
+    padding-right: calc(12px + var(--scrollbar-size) + 10px);
+  }
+  .scroll-y { padding-inline-end: calc(var(--scrollbar-size) + 12px); }
+  .scroll-x { padding-block-end: calc(var(--scrollbar-size) + 12px); }
+}

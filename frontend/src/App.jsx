@@ -24,9 +24,9 @@ export default function App() {
         filter: 'blur(110px)', pointerEvents: 'none', zIndex: 0,
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
+      <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <Navbar />
-        <main style={{ padding: '0 12px 48px' }}>
+        <main className="app-main">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/fixtures" element={<Fixtures />} />
