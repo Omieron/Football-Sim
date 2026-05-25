@@ -31,7 +31,7 @@ func (h *TeamHandler) GetAll(c *gin.Context) {
 func (h *TeamHandler) GetByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	team, err := h.teamService.GetTeamByID(id)
@@ -61,7 +61,7 @@ func (h *TeamHandler) Create(c *gin.Context) {
 func (h *TeamHandler) Update(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	var req model.UpdateTeamRequest
@@ -81,21 +81,21 @@ func (h *TeamHandler) Update(c *gin.Context) {
 func (h *TeamHandler) Delete(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	if err := h.teamService.DeleteTeam(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "takım silindi"})
+	c.JSON(http.StatusOK, gin.H{"message": "team deleted"})
 }
 
 // GET /api/teams/:id/players
 func (h *TeamHandler) GetPlayers(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	players, err := h.playerRepo.GetByTeamID(id)
@@ -110,7 +110,7 @@ func (h *TeamHandler) GetPlayers(c *gin.Context) {
 func (h *TeamHandler) AddPlayer(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	var req model.CreatePlayerRequest

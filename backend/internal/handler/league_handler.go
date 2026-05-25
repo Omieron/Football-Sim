@@ -30,7 +30,7 @@ func (h *LeagueHandler) GetAll(c *gin.Context) {
 func (h *LeagueHandler) GetByID(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	league, err := h.leagueService.GetLeague(id)
@@ -60,21 +60,21 @@ func (h *LeagueHandler) Create(c *gin.Context) {
 func (h *LeagueHandler) Reset(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	if err := h.leagueService.ResetLeague(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "lig sıfırlandı"})
+	c.JSON(http.StatusOK, gin.H{"message": "league reset"})
 }
 
 // GET /api/leagues/:id/standings
 func (h *LeagueHandler) GetStandings(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	standings, err := h.leagueService.GetStandings(id)
@@ -89,7 +89,7 @@ func (h *LeagueHandler) GetStandings(c *gin.Context) {
 func (h *LeagueHandler) GetFixtures(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	fixtures, err := h.leagueService.GetFixtures(id)
@@ -104,7 +104,7 @@ func (h *LeagueHandler) GetFixtures(c *gin.Context) {
 func (h *LeagueHandler) GetPredictions(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	predictions, err := h.leagueService.GetPredictions(id)

@@ -20,12 +20,12 @@ func NewMatchHandler(matchService model.MatchService) *MatchHandler {
 func (h *MatchHandler) GetWeek(c *gin.Context) {
 	leagueID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz league id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid league id"})
 		return
 	}
 	week, err := strconv.Atoi(c.Param("week"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz hafta"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid week"})
 		return
 	}
 	matches, err := h.matchService.GetWeekMatches(leagueID, week)
@@ -40,12 +40,12 @@ func (h *MatchHandler) GetWeek(c *gin.Context) {
 func (h *MatchHandler) PlayWeek(c *gin.Context) {
 	leagueID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz league id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid league id"})
 		return
 	}
 	week, err := strconv.Atoi(c.Param("week"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz hafta"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid week"})
 		return
 	}
 	matches, err := h.matchService.PlayWeek(leagueID, week)
@@ -54,7 +54,7 @@ func (h *MatchHandler) PlayWeek(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "hafta oynanıldı",
+		"message": "week played",
 		"data":    matches,
 	})
 }
@@ -63,21 +63,21 @@ func (h *MatchHandler) PlayWeek(c *gin.Context) {
 func (h *MatchHandler) PlayAll(c *gin.Context) {
 	leagueID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz league id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid league id"})
 		return
 	}
 	if err := h.matchService.PlayAll(leagueID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "tüm maçlar oynanıldı"})
+	c.JSON(http.StatusOK, gin.H{"message": "all matches played"})
 }
 
 // GET /api/matches/:id
 func (h *MatchHandler) GetMatch(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	events, err := h.matchService.GetMatchEvents(id)
@@ -92,7 +92,7 @@ func (h *MatchHandler) GetMatch(c *gin.Context) {
 func (h *MatchHandler) UpdateScore(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	var req model.UpdateMatchRequest
@@ -106,7 +106,7 @@ func (h *MatchHandler) UpdateScore(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "skor güncellendi",
+		"message": "score updated",
 		"data":    match,
 	})
 }
@@ -115,7 +115,7 @@ func (h *MatchHandler) UpdateScore(c *gin.Context) {
 func (h *MatchHandler) GetEvents(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "geçersiz id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
 	events, err := h.matchService.GetMatchEvents(id)
