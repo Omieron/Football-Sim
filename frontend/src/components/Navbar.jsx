@@ -4,6 +4,7 @@ import { useState } from 'react'
 const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/fixtures', label: 'Fixtures' },
+  { to: '/stats', label: 'Stats' },
   { to: '/teams', label: 'Squads' },
   { to: '/leagues/new', label: 'New League' },
   { to: '/import', label: 'Import' },

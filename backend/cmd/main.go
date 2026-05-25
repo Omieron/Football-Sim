@@ -80,6 +80,7 @@ func main() {
 			leagues.GET("/:id/predictions",   leagueHandler.GetPredictions)
 			leagues.GET("/:id/top-scorers",   matchHandler.GetTopScorers)
 			leagues.GET("/:id/top-assists",   matchHandler.GetTopAssists)
+			leagues.GET("/:id/most-cards",    matchHandler.GetMostCards)
 
 			leagues.GET("/:id/weeks/:week",        matchHandler.GetWeek)
 			leagues.POST("/:id/weeks/:week/play",  matchHandler.PlayWeek)

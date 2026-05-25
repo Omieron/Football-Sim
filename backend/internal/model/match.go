@@ -48,6 +48,15 @@ type TopAssist struct {
 	Assists    int    `json:"assists"`
 }
 
+type MostCards struct {
+	PlayerName  string `json:"player_name"`
+	TeamName    string `json:"team_name"`
+	CrestURL    string `json:"crest_url"`
+	YellowCards int    `json:"yellow_cards"`
+	RedCards    int    `json:"red_cards"`
+	TotalCards  int    `json:"total_cards"`
+}
+
 type UpdateMatchRequest struct {
 	HomeGoals int `json:"home_goals" binding:"min=0"`
 	AwayGoals int `json:"away_goals" binding:"min=0"`
@@ -72,6 +81,7 @@ type MatchEventRepository interface {
 	DeleteByMatchID(matchID int) error
 	GetTopScorers(leagueID int, limit int) ([]TopScorer, error)
 	GetTopAssists(leagueID int, limit int) ([]TopAssist, error)
+	GetMostCards(leagueID int, limit int) ([]MostCards, error)
 }
 
 // MatchService interface
@@ -83,4 +93,5 @@ type MatchService interface {
 	GetMatchEvents(matchID int) ([]MatchEvent, error)
 	GetTopScorers(leagueID int) ([]TopScorer, error)
 	GetTopAssists(leagueID int) ([]TopAssist, error)
+	GetMostCards(leagueID int) ([]MostCards, error)
 }

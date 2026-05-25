@@ -112,18 +112,19 @@ function MatchBanner({ matches, totalWeeks, viewWeek, setViewWeek, isNextWeekVie
 }
 
 /* ── Full leader list (goals / assists) ──────────────────── */
-function LeaderList({ players, statKey, emptyText, accent = 'var(--pink)' }) {
+function LeaderList({ players, statKey, emptyText, accent = 'var(--pink)', maxItems }) {
   if (players.length === 0) {
     return (
       <p style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)', lineHeight: 1.6, padding: '8px 0' }}>{emptyText}</p>
     )
   }
 
+  const shown = maxItems ? players.slice(0, maxItems) : players
   const max = players[0]?.[statKey] || 1
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-      {players.map((p, i) => {
+      {shown.map((p, i) => {
         const isTop = i === 0
         const val = p[statKey]
         const pct = (val / max) * 100
@@ -168,11 +169,84 @@ function LeaderList({ players, statKey, emptyText, accent = 'var(--pink)' }) {
   )
 }
 
-/* ── Rotates between goal & assist leaderboards ──────────── */
-function StatsRotator({ scorers, assists, loading }) {
+/* ── Top 3 discipline (dashboard teaser) ─────────────────── */
+function CardsMini({ players, leagueId, emptyText }) {
+  const top = players.slice(0, 3)
+  if (top.length === 0) {
+    return (
+      <p style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)', lineHeight: 1.6, padding: '8px 0' }}>{emptyText}</p>
+    )
+  }
+
+  return (
+    <>
+      <div style={{
+        display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 8,
+        fontSize: 8, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: 'rgba(237,232,220,0.2)',
+      }}>
+        <span>🟨</span><span>🟥</span><span>Tot</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {top.map((p, i) => {
+          const isTop = i === 0
+          return (
+            <div key={`${p.player_name}-${p.team_name}-${i}`} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                {p.crest_url
+                  ? <img src={p.crest_url} alt="" style={{ width: 13, height: 13, objectFit: 'contain', flexShrink: 0 }} />
+                  : <span style={{ width: 13, height: 13, background: 'var(--mid)', display: 'inline-block', flexShrink: 0 }} />
+                }
+                <div style={{ minWidth: 0 }}>
+                  <span style={{
+                    display: 'block', fontSize: isTop ? 13 : 11, fontWeight: isTop ? 700 : 400,
+                    color: isTop ? 'var(--cream)' : 'rgba(237,232,220,0.5)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{p.player_name}</span>
+                  <span style={{
+                    display: 'block', fontSize: 9, color: 'rgba(237,232,220,0.25)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{p.team_name}</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#f5c518' }}>{p.yellow_cards}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--pink)' }}>{p.red_cards}</span>
+                <span style={{
+                  fontSize: isTop ? 16 : 12, fontWeight: 700, color: isTop ? '#ff9f43' : 'rgba(237,232,220,0.3)',
+                  minWidth: 18, textAlign: 'right',
+                }}>{p.total_cards}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {leagueId && (
+        <Link
+          to={`/stats?league=${leagueId}`}
+          style={{
+            display: 'inline-block', marginTop: 12, fontSize: 10, fontWeight: 600,
+            letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'none',
+            color: 'rgba(237,232,220,0.35)', transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--acid)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(237,232,220,0.35)' }}
+        >
+          All stats →
+        </Link>
+      )}
+    </>
+  )
+}
+
+/* ── Rotates between goal, assist & discipline leaderboards ─ */
+function StatsRotator({ scorers, assists, mostCards, leagueId, loading }) {
   const panels = [
     {
       key: 'scorers',
+      type: 'list',
       title: 'Top Scorers',
       players: scorers,
       statKey: 'goals',
@@ -181,11 +255,20 @@ function StatsRotator({ scorers, assists, loading }) {
     },
     {
       key: 'assists',
+      type: 'list',
       title: 'Top Assists',
       players: assists,
       statKey: 'assists',
       accent: 'var(--acid)',
       emptyText: 'No assists yet. Play a matchday to see the race.',
+    },
+    {
+      key: 'cards',
+      type: 'cards',
+      title: 'Discipline',
+      players: mostCards,
+      accent: '#ff9f43',
+      emptyText: 'No cards yet. Play a matchday to see bookings.',
     },
   ]
 
@@ -194,7 +277,7 @@ function StatsRotator({ scorers, assists, loading }) {
   const timerRef = useRef(null)
   const panel = panels[idx]
 
-  useEffect(() => { setIdx(0); setAnimKey(k => k + 1) }, [scorers, assists])
+  useEffect(() => { setIdx(0); setAnimKey(k => k + 1) }, [scorers, assists, mostCards])
 
   useEffect(() => {
     clearInterval(timerRef.current)
@@ -202,7 +285,7 @@ function StatsRotator({ scorers, assists, loading }) {
       setIdx(i => { const n = (i + 1) % panels.length; setAnimKey(k => k + 1); return n })
     }, 5000)
     return () => clearInterval(timerRef.current)
-  }, [scorers, assists])
+  }, [scorers, assists, mostCards])
 
   if (loading) {
     return (
@@ -237,12 +320,33 @@ function StatsRotator({ scorers, assists, loading }) {
       </div>
 
       <div key={animKey} style={{ animation: 'bannerIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
-        <LeaderList
-          players={panel.players}
-          statKey={panel.statKey}
-          emptyText={panel.emptyText}
-          accent={panel.accent}
-        />
+        {panel.type === 'cards' ? (
+          <CardsMini players={panel.players} leagueId={leagueId} emptyText={panel.emptyText} />
+        ) : (
+          <>
+            <LeaderList
+              players={panel.players}
+              statKey={panel.statKey}
+              emptyText={panel.emptyText}
+              accent={panel.accent}
+              maxItems={5}
+            />
+            {leagueId && (
+              <Link
+                to={`/stats?league=${leagueId}`}
+                style={{
+                  display: 'inline-block', marginTop: 12, fontSize: 10, fontWeight: 600,
+                  letterSpacing: '0.08em', textTransform: 'uppercase', textDecoration: 'none',
+                  color: 'rgba(237,232,220,0.35)', transition: 'color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = panel.accent }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(237,232,220,0.35)' }}
+              >
+                All stats →
+              </Link>
+            )}
+          </>
+        )}
       </div>
 
       <div style={{ height: 1, background: 'var(--border)', marginTop: 14 }}>
@@ -264,6 +368,7 @@ export default function Dashboard() {
   const [predictions, setPredictions] = useState([])
   const [topScorers, setTopScorers] = useState([])
   const [topAssists, setTopAssists] = useState([])
+  const [mostCards, setMostCards] = useState([])
   const [statsLoading, setStatsLoading] = useState(false)
   const [weekMatches, setWeekMatches] = useState([])
   const [viewWeek, setViewWeek] = useState(1)
@@ -303,15 +408,16 @@ export default function Dashboard() {
       setStandings(st.data.data || [])
 
       setStatsLoading(true)
-      Promise.all([
+      Promise.allSettled([
         api.get(`/api/leagues/${id}/top-scorers`),
         api.get(`/api/leagues/${id}/top-assists`),
+        api.get(`/api/leagues/${id}/most-cards`),
       ])
-        .then(([sc, as]) => {
-          setTopScorers(sc.data.data || [])
-          setTopAssists(as.data.data || [])
+        .then(([sc, as, mc]) => {
+          setTopScorers(sc.status === 'fulfilled' ? (sc.value.data.data || []) : [])
+          setTopAssists(as.status === 'fulfilled' ? (as.value.data.data || []) : [])
+          setMostCards(mc.status === 'fulfilled' ? (mc.value.data.data || []) : [])
         })
-        .catch(() => { setTopScorers([]); setTopAssists([]) })
         .finally(() => setStatsLoading(false))
 
       if (lgData.current_week >= 4) {
@@ -459,7 +565,13 @@ export default function Dashboard() {
               setViewWeek={setViewWeek}
               isNextWeekView={isNextWeekView}
             />
-            <StatsRotator scorers={topScorers} assists={topAssists} loading={statsLoading} />
+            <StatsRotator
+              scorers={topScorers}
+              assists={topAssists}
+              mostCards={mostCards}
+              leagueId={selectedId}
+              loading={statsLoading}
+            />
             {predictions.length > 0 && <PredictionWidget predictions={predictions} />}
           </div>
         </div>

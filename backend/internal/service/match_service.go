@@ -176,3 +176,7 @@ func (s *matchService) GetTopScorers(leagueID int) ([]model.TopScorer, error) {
 func (s *matchService) GetTopAssists(leagueID int) ([]model.TopAssist, error) {
 	return s.eventRepo.GetTopAssists(leagueID, 10)
 }
+
+func (s *matchService) GetMostCards(leagueID int) ([]model.MostCards, error) {
+	return s.eventRepo.GetMostCards(leagueID, 50)
+}

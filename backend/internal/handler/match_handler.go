@@ -141,6 +141,21 @@ func (h *MatchHandler) GetTopAssists(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": assists})
 }
 
+// GET /api/leagues/:id/most-cards
+func (h *MatchHandler) GetMostCards(c *gin.Context) {
+	leagueID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid league id"})
+		return
+	}
+	cards, err := h.matchService.GetMostCards(leagueID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": cards})
+}
+
 // GET /api/matches/:id/events
 func (h *MatchHandler) GetEvents(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))

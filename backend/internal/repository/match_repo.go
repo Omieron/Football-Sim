@@ -284,3 +284,37 @@ func (r *matchEventRepository) GetTopAssists(leagueID int, limit int) ([]model.T
 	}
 	return assists, nil
 }
+
+func (r *matchEventRepository) GetMostCards(leagueID int, limit int) ([]model.MostCards, error) {
+	query := `
+		SELECT p.name, t.name, COALESCE(t.crest_url,''),
+		       COUNT(*) FILTER (WHERE me.type = 'yellow_card') AS yellow_cards,
+		       COUNT(*) FILTER (WHERE me.type = 'red_card')    AS red_cards,
+		       COUNT(*) FILTER (WHERE me.type IN ('yellow_card','red_card')) AS total_cards
+		FROM match_events me
+		JOIN matches m ON m.id = me.match_id
+		JOIN teams   t ON t.id = me.team_id
+		JOIN players p ON p.id = me.player_id
+		WHERE m.league_id = $1
+		  AND me.type IN ('yellow_card', 'red_card')
+		  AND me.player_id IS NOT NULL
+		GROUP BY p.name, t.name, t.crest_url
+		ORDER BY total_cards DESC, red_cards DESC, yellow_cards DESC
+		LIMIT $2`
+
+	rows, err := r.db.Query(query, leagueID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cards []model.MostCards
+	for rows.Next() {
+		var c model.MostCards
+		if err := rows.Scan(&c.PlayerName, &c.TeamName, &c.CrestURL, &c.YellowCards, &c.RedCards, &c.TotalCards); err != nil {
+			return nil, err
+		}
+		cards = append(cards, c)
+	}
+	return cards, nil
+}
