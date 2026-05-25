@@ -148,7 +148,7 @@ func (s *Seeder) Run(codes []string) (Result, error) {
 		for _, c := range codes {
 			codeSet[c] = true
 		}
-		filtered := leagues[:0]
+		filtered := make([]LeagueConfig, 0, len(codes))
 		for _, l := range leagues {
 			if codeSet[l.ESPNCode] {
 				filtered = append(filtered, l)
