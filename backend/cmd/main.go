@@ -5,6 +5,7 @@ import (
 	"football-sim/internal/handler"
 	"football-sim/internal/middleware"
 	"football-sim/internal/repository"
+	"football-sim/internal/seeder"
 	"football-sim/internal/service"
 	"log"
 
@@ -40,6 +41,7 @@ func main() {
 	teamHandler   := handler.NewTeamHandler(teamService, playerRepo)
 	leagueHandler := handler.NewLeagueHandler(leagueService)
 	matchHandler  := handler.NewMatchHandler(matchService)
+	seedHandler   := handler.NewSeedHandler(seeder.New(db))
 
 	// Router
 	r := gin.Default()
@@ -88,6 +90,12 @@ func main() {
 			matches.GET("/:id",        matchHandler.GetMatch)
 			matches.PUT("/:id",        matchHandler.UpdateScore)
 			matches.GET("/:id/events", matchHandler.GetEvents)
+		}
+
+		// Admin
+		admin := api.Group("/admin")
+		{
+			admin.POST("/seed", seedHandler.Run)
 		}
 	}
 
