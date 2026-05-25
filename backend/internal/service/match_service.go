@@ -120,23 +120,28 @@ func (s *matchService) PlayWeek(leagueID, week int) ([]model.Match, error) {
 	return matches, nil
 }
 
-func (s *matchService) PlayAll(leagueID int) error {
+func (s *matchService) PlayAll(leagueID int) ([]model.WeekResult, error) {
 	weeks, err := s.matchRepo.GetUnplayedWeeks(leagueID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(weeks) == 0 {
-		return s.leagueRepo.UpdateStatus(leagueID, "finished")
+		return nil, s.leagueRepo.UpdateStatus(leagueID, "finished")
 	}
 
+	results := make([]model.WeekResult, 0, len(weeks))
 	for _, w := range weeks {
-		if _, err := s.PlayWeek(leagueID, w); err != nil {
-			return fmt.Errorf("error playing week %d: %w", w, err)
+		matches, err := s.PlayWeek(leagueID, w)
+		if err != nil {
+			return nil, fmt.Errorf("error playing week %d: %w", w, err)
 		}
+		results = append(results, model.WeekResult{Week: w, Matches: matches})
 	}
 
-	// Mark league as finished
-	return s.leagueRepo.UpdateStatus(leagueID, "finished")
+	if err := s.leagueRepo.UpdateStatus(leagueID, "finished"); err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 func (s *matchService) UpdateMatchScore(id int, req model.UpdateMatchRequest) (*model.Match, error) {

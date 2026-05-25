@@ -66,11 +66,15 @@ func (h *MatchHandler) PlayAll(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid league id"})
 		return
 	}
-	if err := h.matchService.PlayAll(leagueID); err != nil {
+	results, err := h.matchService.PlayAll(leagueID)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "all matches played"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "all matches played",
+		"data":    results,
+	})
 }
 
 // GET /api/matches/:id

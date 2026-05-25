@@ -92,6 +92,11 @@ type UpdateMatchRequest struct {
 	AwayGoals int `json:"away_goals" binding:"min=0"`
 }
 
+type WeekResult struct {
+	Week    int     `json:"week"`
+	Matches []Match `json:"matches"`
+}
+
 // MatchRepository interface
 type MatchRepository interface {
 	GetByID(id int) (*Match, error)
@@ -119,7 +124,7 @@ type MatchEventRepository interface {
 type MatchService interface {
 	GetWeekMatches(leagueID, week int) ([]Match, error)
 	PlayWeek(leagueID, week int) ([]Match, error)
-	PlayAll(leagueID int) error
+	PlayAll(leagueID int) ([]WeekResult, error)
 	UpdateMatchScore(id int, req UpdateMatchRequest) (*Match, error)
 	GetMatchEvents(matchID int) ([]MatchEvent, error)
 	DeleteMatchEvent(matchID, eventID int) error
