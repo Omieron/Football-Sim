@@ -17,13 +17,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Teams
 CREATE TABLE teams (
-    id          SERIAL PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL UNIQUE,
-    short_name  VARCHAR(20),
-    crest_url   VARCHAR(255),              -- team logo (fetched from API)
-    attack      INT NOT NULL DEFAULT 50 CHECK (attack  BETWEEN 1 AND 100),
-    defense     INT NOT NULL DEFAULT 50 CHECK (defense BETWEEN 1 AND 100),
-    created_at  TIMESTAMP DEFAULT NOW()
+    id             SERIAL PRIMARY KEY,
+    name           VARCHAR(100) NOT NULL UNIQUE,
+    short_name     VARCHAR(20),
+    crest_url      VARCHAR(255),
+    attack         INT NOT NULL DEFAULT 50 CHECK (attack  BETWEEN 1 AND 100),
+    defense        INT NOT NULL DEFAULT 50 CHECK (defense BETWEEN 1 AND 100),
+    competition_id INT REFERENCES competitions(id) ON DELETE SET NULL,
+    created_at     TIMESTAMP DEFAULT NOW()
 );
 
 -- Players

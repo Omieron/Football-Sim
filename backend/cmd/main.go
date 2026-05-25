@@ -97,6 +97,7 @@ func main() {
 		{
 			admin.GET("/espn-leagues", seedHandler.GetLeagues)
 			admin.POST("/seed",        seedHandler.Run)
+			admin.DELETE("/reset",     seedHandler.Reset)
 		}
 	}
 

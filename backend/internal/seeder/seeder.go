@@ -83,6 +83,26 @@ func New(db *sql.DB) *Seeder {
 	}
 }
 
+func (s *Seeder) ResetAll() error {
+	// Order matters — FK constraints
+	tables := []string{
+		"match_events",
+		"matches",
+		"standings",
+		"league_teams",
+		"leagues",
+		"players",
+		"teams",
+		"competitions",
+	}
+	for _, t := range tables {
+		if _, err := s.db.Exec("DELETE FROM " + t); err != nil {
+			return fmt.Errorf("clearing %s: %w", t, err)
+		}
+	}
+	return nil
+}
+
 func (s *Seeder) Run(codes []string) (Result, error) {
 	var result Result
 
@@ -104,6 +124,13 @@ func (s *Seeder) Run(codes []string) (Result, error) {
 	for _, league := range leagues {
 		log.Printf("Fetching teams for %s...", league.Name)
 
+		// Upsert the real-world competition record
+		competitionID, err := s.upsertCompetition(league.Name, league.ESPNCode)
+		if err != nil {
+			log.Printf("Could not upsert competition %s: %v", league.Name, err)
+			continue
+		}
+
 		teams, err := s.fetchTeams(league.ESPNCode)
 		if err != nil {
 			log.Printf("Could not fetch teams for %s: %v", league.Name, err)
@@ -122,7 +149,7 @@ func (s *Seeder) Run(codes []string) (Result, error) {
 				defense = 40
 			}
 
-			teamID, err := s.upsertTeam(team.DisplayName, team.Abbreviation, "", attack, defense)
+			teamID, err := s.upsertTeam(team.DisplayName, team.Abbreviation, "", attack, defense, competitionID)
 			if err != nil {
 				log.Printf("Could not insert team %s: %v", team.DisplayName, err)
 				continue
@@ -152,7 +179,6 @@ func (s *Seeder) Run(codes []string) (Result, error) {
 
 			log.Printf("  → %d players inserted", playerCount)
 
-			// Respect ESPN rate limits
 			time.Sleep(200 * time.Millisecond)
 		}
 
@@ -206,18 +232,32 @@ func (s *Seeder) fetchRoster(leagueCode, teamID string) ([]espnPlayer, error) {
 
 // ─── DB Helpers ───────────────────────────────────────────────────────────────
 
-func (s *Seeder) upsertTeam(name, shortName, crestURL string, attack, defense int) (int, error) {
+func (s *Seeder) upsertCompetition(name, espnCode string) (int, error) {
 	var id int
 	err := s.db.QueryRow(`
-		INSERT INTO teams (name, short_name, crest_url, attack, defense)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (name) DO UPDATE
-		SET short_name = EXCLUDED.short_name,
-		    crest_url  = EXCLUDED.crest_url,
-		    attack     = EXCLUDED.attack,
-		    defense    = EXCLUDED.defense
+		INSERT INTO competitions (name, code, country)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (code) DO UPDATE
+		SET name = EXCLUDED.name
 		RETURNING id`,
-		name, shortName, crestURL, attack, defense,
+		name, espnCode, countryFromCode(espnCode),
+	).Scan(&id)
+	return id, err
+}
+
+func (s *Seeder) upsertTeam(name, shortName, crestURL string, attack, defense, competitionID int) (int, error) {
+	var id int
+	err := s.db.QueryRow(`
+		INSERT INTO teams (name, short_name, crest_url, attack, defense, competition_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (name) DO UPDATE
+		SET short_name     = EXCLUDED.short_name,
+		    crest_url      = EXCLUDED.crest_url,
+		    attack         = EXCLUDED.attack,
+		    defense        = EXCLUDED.defense,
+		    competition_id = EXCLUDED.competition_id
+		RETURNING id`,
+		name, shortName, crestURL, attack, defense, competitionID,
 	).Scan(&id)
 	return id, err
 }
@@ -230,6 +270,33 @@ func (s *Seeder) insertPlayer(teamID int, name, position string) error {
 		teamID, name, position,
 	)
 	return err
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+func countryFromCode(code string) string {
+	switch {
+	case len(code) >= 3 && code[:3] == "eng":
+		return "England"
+	case len(code) >= 3 && code[:3] == "esp":
+		return "Spain"
+	case len(code) >= 3 && code[:3] == "ger":
+		return "Germany"
+	case len(code) >= 3 && code[:3] == "ita":
+		return "Italy"
+	case len(code) >= 3 && code[:3] == "fra":
+		return "France"
+	case len(code) >= 3 && code[:3] == "tur":
+		return "Turkey"
+	case len(code) >= 3 && code[:3] == "ned":
+		return "Netherlands"
+	case len(code) >= 3 && code[:3] == "por":
+		return "Portugal"
+	case len(code) >= 3 && code[:3] == "sco":
+		return "Scotland"
+	default:
+		return "Unknown"
+	}
 }
 
 // ─── Position Normalizer ──────────────────────────────────────────────────────

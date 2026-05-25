@@ -3,13 +3,15 @@ package model
 import "time"
 
 type Team struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	ShortName string    `json:"short_name"`
-	CrestURL  string    `json:"crest_url"`
-	Attack    int       `json:"attack"`
-	Defense   int       `json:"defense"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              int       `json:"id"`
+	Name            string    `json:"name"`
+	ShortName       string    `json:"short_name"`
+	CrestURL        string    `json:"crest_url"`
+	Attack          int       `json:"attack"`
+	Defense         int       `json:"defense"`
+	CompetitionID   *int      `json:"competition_id,omitempty"`
+	CompetitionName string    `json:"competition_name,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type CreateTeamRequest struct {

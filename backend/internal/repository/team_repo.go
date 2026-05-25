@@ -16,9 +16,11 @@ func NewTeamRepository(db *sql.DB) model.TeamRepository {
 
 func (r *teamRepository) GetAll() ([]model.Team, error) {
 	query := `
-		SELECT id, name, short_name, crest_url, attack, defense, created_at
-		FROM teams
-		ORDER BY name ASC`
+		SELECT t.id, t.name, t.short_name, t.crest_url, t.attack, t.defense,
+		       t.competition_id, COALESCE(c.name, '') AS competition_name, t.created_at
+		FROM teams t
+		LEFT JOIN competitions c ON c.id = t.competition_id
+		ORDER BY c.name ASC NULLS LAST, t.name ASC`
 
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -31,7 +33,7 @@ func (r *teamRepository) GetAll() ([]model.Team, error) {
 		var t model.Team
 		if err := rows.Scan(
 			&t.ID, &t.Name, &t.ShortName, &t.CrestURL,
-			&t.Attack, &t.Defense, &t.CreatedAt,
+			&t.Attack, &t.Defense, &t.CompetitionID, &t.CompetitionName, &t.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -42,13 +44,16 @@ func (r *teamRepository) GetAll() ([]model.Team, error) {
 
 func (r *teamRepository) GetByID(id int) (*model.Team, error) {
 	query := `
-		SELECT id, name, short_name, crest_url, attack, defense, created_at
-		FROM teams WHERE id = $1`
+		SELECT t.id, t.name, t.short_name, t.crest_url, t.attack, t.defense,
+		       t.competition_id, COALESCE(c.name, '') AS competition_name, t.created_at
+		FROM teams t
+		LEFT JOIN competitions c ON c.id = t.competition_id
+		WHERE t.id = $1`
 
 	var t model.Team
 	err := r.db.QueryRow(query, id).Scan(
 		&t.ID, &t.Name, &t.ShortName, &t.CrestURL,
-		&t.Attack, &t.Defense, &t.CreatedAt,
+		&t.Attack, &t.Defense, &t.CompetitionID, &t.CompetitionName, &t.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("team not found")

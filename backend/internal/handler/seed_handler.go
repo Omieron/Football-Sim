@@ -28,6 +28,15 @@ func (h *SeedHandler) GetLeagues(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": leagues})
 }
 
+// DELETE /api/admin/reset
+func (h *SeedHandler) Reset(c *gin.Context) {
+	if err := h.seeder.ResetAll(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "database cleared"})
+}
+
 // POST /api/admin/seed
 func (h *SeedHandler) Run(c *gin.Context) {
 	var body struct {
