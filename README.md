@@ -2,6 +2,14 @@
 
 Football league simulation — standings, fixtures, live match events, stats, and championship predictions.
 
+## Live deployment
+
+| | URL |
+|---|-----|
+| **Web app** | https://caseinsider.omerfarukasil.me |
+| **API (same domain)** | https://caseinsider.omerfarukasil.me/api/... |
+| **API direct (Postman)** | http://165.232.69.83:9011 |
+
 ## Quick start (Docker)
 
 ```bash

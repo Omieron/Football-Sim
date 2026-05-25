@@ -1,5 +1,19 @@
 # Pitchline — API Documentation (Postman)
 
+## Production (Case Insider)
+
+| | Base URL |
+|---|----------|
+| **Web app** | https://caseinsider.omerfarukasil.me |
+| **API via domain** | `https://caseinsider.omerfarukasil.me` — paths below (`/api/...`, `/health`) |
+| **API direct (Postman)** | `http://165.232.69.83:9011` |
+
+Example: `GET https://caseinsider.omerfarukasil.me/api/leagues` or `GET http://165.232.69.83:9011/api/leagues`
+
+---
+
+## Local / Docker (self-hosted)
+
 **Base URL (local backend):** `http://localhost:8080`
 
 **Base URL (Docker — Postman direct):** `http://YOUR_SERVER_IP:9011`

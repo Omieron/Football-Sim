@@ -9,6 +9,28 @@ Two ways to run the project:
 
 ---
 
+## Live deployment (Case Insider)
+
+Production instance on DigitalOcean:
+
+| | URL |
+|---|-----|
+| **Web app** | https://caseinsider.omerfarukasil.me |
+| **API (via domain + nginx)** | https://caseinsider.omerfarukasil.me/api/... |
+| **API direct (Postman / curl)** | http://165.232.69.83:9011 |
+
+Examples:
+
+```
+GET  https://caseinsider.omerfarukasil.me/api/leagues
+GET  http://165.232.69.83:9011/health
+POST http://165.232.69.83:9011/api/admin/seed
+```
+
+HTTPS is handled by **Caddy** on the host (`caseinsider.omerfarukasil.me` → `localhost:9010`). Docker still exposes **9010** (web) and **9011** (backend) for direct IP access.
+
+---
+
 ## Quick Start with Docker
 
 ### Prerequisites
@@ -241,6 +263,7 @@ Vite proxies `/api` to `http://localhost:8080` — open the URL shown in the ter
 ## 4. Testing via Postman — Full Happy Path
 
 > **Base URL**
+> - **Production:** `https://caseinsider.omerfarukasil.me` or direct `http://165.232.69.83:9011`
 > - Docker (Postman direct): `http://YOUR_SERVER_IP:9011`
 > - Docker (via nginx): `http://YOUR_SERVER_IP:9010` — paths start with `/api/...`
 > - Local backend only: `http://localhost:8080`
