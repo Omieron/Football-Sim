@@ -393,12 +393,14 @@ Returns championship probabilities calculated via Monte Carlo simulation (1000 r
     {
       "team_id": 1,
       "team_name": "Galatasaray",
-      "championship_probability": 67.3
+      "crest_url": "https://...",
+      "percentage": 67.3
     },
     {
       "team_id": 2,
       "team_name": "Fenerbahce",
-      "championship_probability": 22.1
+      "crest_url": "https://...",
+      "percentage": 22.1
     }
   ]
 }
