@@ -142,5 +142,5 @@ enough that anyone can run the project without asking questions.
 
 **AI's role:**
 Wrote `API.md` (full endpoint reference with request/response examples, error codes, and
-recommended test order) and `HowToRun.md` (prerequisites, DB setup, env config, server startup,
-9-step Postman happy path, troubleshooting section).
+recommended test order) and `HowToRun.md` (Docker quick start, local prerequisites, env config,
+Postman happy path, troubleshooting section).

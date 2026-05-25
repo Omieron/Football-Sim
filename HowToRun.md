@@ -1,10 +1,145 @@
-# How to Run — Football League Simulation
+# How to Run — Pitchline (League Simulation)
 
-## Prerequisites
+Two ways to run the project:
+
+| Method | Best for |
+|--------|----------|
+| **Docker** (recommended) | Server deploy, quick demo, no local Go/Postgres install |
+| **Local manual** | Active backend/frontend development |
+
+---
+
+## Quick Start with Docker
+
+### Prerequisites
+
+| Tool | Minimum Version |
+|------|----------------|
+| Docker | 24+ |
+| Docker Compose | v2+ |
+
+### 1. Configure environment
+
+From the project root:
+
+```bash
+cp .env.docker.example .env
+```
+
+Edit `.env` and set a strong password:
+
+```env
+DB_USER=postgres
+DB_PASSWORD=your_strong_password_here
+DB_NAME=league
+HTTP_PORT=9010
+BACKEND_PORT=9011
+```
+
+> **Ports:** `9010` = web UI (nginx). `9011` = API direct for Postman/curl. Adjust if your server uses a different range.
+
+### 2. Build and start
+
+```bash
+docker compose up -d --build
+```
+
+This starts three services:
+
+| Service | Role |
+|---------|------|
+| `db` | PostgreSQL 16 — schema loaded automatically from `sql/tables.sql` on first run |
+| `backend` | Go API — host port `BACKEND_PORT` (default **9011**) |
+| `web` | Nginx — React UI + `/api` proxy — host port `HTTP_PORT` (default **9010**) |
+
+### 3. Open the app
+
+**Web UI:**
+
+```
+http://YOUR_SERVER_IP:9010
+```
+
+**API direct (Postman / curl):**
+
+```
+http://YOUR_SERVER_IP:9011
+```
+
+Example: `GET http://YOUR_SERVER_IP:9011/health`
+
+**API via nginx (same origin as UI):**
+
+```
+http://YOUR_SERVER_IP:9010/api/...
+```
+
+### 4. Seed data
+
+1. Open the **Import** page in the UI.
+2. Select a league (e.g. Premier League) and import teams/players.
+
+Or via API (direct backend port):
+
+```
+POST http://YOUR_SERVER_IP:9011/api/admin/seed
+Content-Type: application/json
+
+{ "league_codes": ["eng.1"] }
+```
+
+### Useful Docker commands
+
+```bash
+docker compose ps                 # service status
+docker compose logs -f web        # frontend/nginx logs
+docker compose logs -f backend    # API logs
+docker compose restart backend    # restart API after env change
+docker compose down               # stop containers
+docker compose down -v            # stop + delete database volume (full reset)
+```
+
+### Docker troubleshooting
+
+**Port already in use**
+
+Change `HTTP_PORT` or `BACKEND_PORT` in `.env` and run `docker compose up -d --build` again.
+
+**`Set DB_PASSWORD in .env` error**
+
+You copied `.env.docker.example` to `.env` but left `DB_PASSWORD` empty.
+
+**Blank page / API errors after first boot**
+
+Wait ~10 seconds for Postgres healthcheck, then check logs:
+
+```bash
+docker compose logs backend
+```
+
+**Schema missing / relation does not exist**
+
+The DB volume was created before schema init. Reset and recreate:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+**Play All times out**
+
+Nginx proxy timeouts are already extended to 300s in `frontend/nginx.conf`.
+
+---
+
+## Local Development (Manual Setup)
+
+### Prerequisites
 
 | Tool | Minimum Version |
 |------|----------------|
 | Go | 1.21+ |
+| Node.js | 20+ (frontend only) |
 | PostgreSQL | 14+ |
 
 ---
@@ -55,7 +190,7 @@ SERVER_PORT=8080
 
 ---
 
-## 3. Install Dependencies & Run
+## 3. Install Dependencies & Run (backend)
 
 ```bash
 cd backend
@@ -72,9 +207,26 @@ Server started: http://localhost:8080
 
 The API is now live at `http://localhost:8080`.
 
+### Frontend (optional, local dev)
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite proxies `/api` to `http://localhost:8080` — open the URL shown in the terminal (usually `http://localhost:5173`).
+
 ---
 
 ## 4. Testing via Postman — Full Happy Path
+
+> **Base URL**
+> - Docker (Postman direct): `http://YOUR_SERVER_IP:9011`
+> - Docker (via nginx): `http://YOUR_SERVER_IP:9010` — paths start with `/api/...`
+> - Local backend only: `http://localhost:8080`
 
 Follow these steps in order. Each step uses the id returned by the previous one.
 
@@ -282,7 +434,15 @@ go test ./...
 
 ## Troubleshooting
 
-**`connection refused` on startup**
+**Docker: containers exit immediately**
+
+Run `docker compose logs db backend web` and verify `.env` has `DB_PASSWORD` set.
+
+**Docker: cannot reach app from another machine**
+
+Open `HTTP_PORT` and `BACKEND_PORT` in your firewall/security group (e.g. TCP 9010 and 9011).
+
+**`connection refused` on startup (local)**
 PostgreSQL is not running. Start it with `brew services start postgresql` (macOS) or `sudo systemctl start postgresql` (Linux).
 
 **`password authentication failed`**

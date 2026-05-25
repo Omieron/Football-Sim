@@ -1,8 +1,12 @@
-# Football Sim — API Documentation (Postman)
+# Pitchline — API Documentation (Postman)
 
-**Base URL:** `http://localhost:8080`
+**Base URL (local backend):** `http://localhost:8080`
 
----
+**Base URL (Docker — Postman direct):** `http://YOUR_SERVER_IP:9011`
+
+**Base URL (Docker — via nginx):** `http://YOUR_SERVER_IP:9010` — same paths below (`/api/...`, `/health`)
+
+> Default ports are set in `.env` (`HTTP_PORT=9010`, `BACKEND_PORT=9011`). Change them if your server uses a different range.
 
 ## Recommended Test Order
 
