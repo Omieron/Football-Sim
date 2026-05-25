@@ -51,23 +51,17 @@ type LeagueConfig struct {
 	DefenseDecay int
 }
 
-var defaultLeagues = []LeagueConfig{
-	{
-		Name:         "English Premier League",
-		ESPNCode:     "eng.1",
-		BaseAttack:   88,
-		BaseDefense:  85,
-		AttackDecay:  2,
-		DefenseDecay: 2,
-	},
-	{
-		Name:         "La Liga",
-		ESPNCode:     "esp.1",
-		BaseAttack:   87,
-		BaseDefense:  84,
-		AttackDecay:  2,
-		DefenseDecay: 2,
-	},
+var AllLeagues = []LeagueConfig{
+	{Name: "English Premier League", ESPNCode: "eng.1", BaseAttack: 88, BaseDefense: 85, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "La Liga",                ESPNCode: "esp.1", BaseAttack: 87, BaseDefense: 84, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "Bundesliga",             ESPNCode: "ger.1", BaseAttack: 86, BaseDefense: 83, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "Serie A",                ESPNCode: "ita.1", BaseAttack: 85, BaseDefense: 82, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "Ligue 1",                ESPNCode: "fra.1", BaseAttack: 84, BaseDefense: 81, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "Süper Lig",              ESPNCode: "tur.1", BaseAttack: 80, BaseDefense: 77, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "Eredivisie",             ESPNCode: "ned.1", BaseAttack: 79, BaseDefense: 76, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "Primeira Liga",          ESPNCode: "por.1", BaseAttack: 78, BaseDefense: 75, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "English Championship",   ESPNCode: "eng.2", BaseAttack: 72, BaseDefense: 70, AttackDecay: 1, DefenseDecay: 1},
+	{Name: "Scottish Premiership",   ESPNCode: "sco.1", BaseAttack: 70, BaseDefense: 68, AttackDecay: 2, DefenseDecay: 2},
 }
 
 // ─── Seeder ───────────────────────────────────────────────────────────────────
@@ -89,10 +83,25 @@ func New(db *sql.DB) *Seeder {
 	}
 }
 
-func (s *Seeder) Run() (Result, error) {
+func (s *Seeder) Run(codes []string) (Result, error) {
 	var result Result
 
-	for _, league := range defaultLeagues {
+	leagues := AllLeagues
+	if len(codes) > 0 {
+		codeSet := make(map[string]bool, len(codes))
+		for _, c := range codes {
+			codeSet[c] = true
+		}
+		filtered := leagues[:0]
+		for _, l := range leagues {
+			if codeSet[l.ESPNCode] {
+				filtered = append(filtered, l)
+			}
+		}
+		leagues = filtered
+	}
+
+	for _, league := range leagues {
 		log.Printf("Fetching teams for %s...", league.Name)
 
 		teams, err := s.fetchTeams(league.ESPNCode)

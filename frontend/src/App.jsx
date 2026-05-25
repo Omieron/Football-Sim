@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import Fixtures from './pages/Fixtures'
 import Teams from './pages/Teams'
 import NewLeague from './pages/NewLeague'
+import Import from './pages/Import'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
             <Route path="/fixtures" element={<Fixtures />} />
             <Route path="/teams" element={<Teams />} />
             <Route path="/leagues/new" element={<NewLeague />} />
+            <Route path="/import" element={<Import />} />
           </Routes>
         </main>
       </div>

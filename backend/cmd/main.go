@@ -95,7 +95,8 @@ func main() {
 		// Admin
 		admin := api.Group("/admin")
 		{
-			admin.POST("/seed", seedHandler.Run)
+			admin.GET("/espn-leagues", seedHandler.GetLeagues)
+			admin.POST("/seed",        seedHandler.Run)
 		}
 	}
 

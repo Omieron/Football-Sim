@@ -5,6 +5,7 @@ const links = [
   { to: '/fixtures', label: 'Fixtures' },
   { to: '/teams', label: 'Teams' },
   { to: '/leagues/new', label: 'New League' },
+  { to: '/import', label: 'Import' },
 ]
 
 export default function Navbar() {
