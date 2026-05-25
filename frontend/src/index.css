@@ -303,17 +303,10 @@ body::after {
 }
 
 .app-nav-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  flex-shrink: 0;
   width: 36px;
   height: 36px;
-  background: var(--acid);
-  color: var(--black);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
 }
 
 .app-nav-brand-text {

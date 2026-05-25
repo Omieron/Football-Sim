@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
+import BrandMark from './BrandMark'
+import { BRAND } from '../config/brand'
 
 const mainLinks = [
   { to: '/', label: 'Dashboard', end: true },
@@ -26,10 +28,10 @@ export default function Navbar() {
     <header className="app-nav">
       <div className="app-nav-inner">
         <Link to="/" className="app-nav-brand" onClick={() => setMenuOpen(false)}>
-          <span className="app-nav-mark">FS</span>
+          <BrandMark className="app-nav-mark" />
           <span className="app-nav-brand-text">
-            <span className="app-nav-brand-name">Football Sim</span>
-            <span className="app-nav-brand-tag">Season Manager</span>
+            <span className="app-nav-brand-name">{BRAND.name}</span>
+            <span className="app-nav-brand-tag">{BRAND.tagline}</span>
           </span>
         </Link>
 
