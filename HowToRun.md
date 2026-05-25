@@ -101,6 +101,23 @@ docker compose down -v            # stop + delete database volume (full reset)
 
 ### Docker troubleshooting
 
+**`npm ci` failed while building `web`**
+
+Usually one of these:
+
+1. **`package-lock.json` out of sync** — often after generating the lock on macOS while Linux Docker needs `@emnapi/core` / `@emnapi/runtime` (Tailwind/Rolldown wasm deps). Pull latest code; the repo lock file includes them. If you still see `Missing: @emnapi/... from lock file`, run locally:
+   ```bash
+   cd frontend && npm install && git add package-lock.json && git commit -m "fix lock file for linux docker"
+   ```
+2. **See the real npm error** (Docker hides it by default):
+   ```bash
+   docker compose build web --no-cache --progress=plain 2>&1 | tail -80
+   ```
+   Or on the server: `cat /root/.npm/_logs/*-debug-*.log | tail -50`
+3. **Registry/network** — the server must reach `registry.npmjs.org`.
+
+The frontend Dockerfile uses `node:22-bookworm-slim` (not Alpine) because Vite 8 / Tailwind 4 ship native Linux binaries that are more reliable on Debian.
+
 **Port already in use**
 
 Change `HTTP_PORT` or `BACKEND_PORT` in `.env` and run `docker compose up -d --build` again.
