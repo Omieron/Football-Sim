@@ -31,23 +31,23 @@ func NewLeagueService(
 
 func (s *leagueService) CreateLeague(req model.CreateLeagueRequest) (*model.League, error) {
 	if len(req.TeamIDs) < 4 {
-		return nil, fmt.Errorf("en az 4 takım gerekli")
+		return nil, fmt.Errorf("at least 4 teams required")
 	}
 
 	// Create league
 	league := &model.League{Name: req.Name}
 	if err := s.leagueRepo.Create(league); err != nil {
-		return nil, fmt.Errorf("lig oluşturulamadı: %w", err)
+		return nil, fmt.Errorf("failed to create league: %w", err)
 	}
 
 	// Add teams
 	if err := s.leagueRepo.AddTeams(league.ID, req.TeamIDs); err != nil {
-		return nil, fmt.Errorf("takımlar eklenemedi: %w", err)
+		return nil, fmt.Errorf("failed to add teams: %w", err)
 	}
 
 	// Initialize standings
 	if err := s.standingRepo.InitForLeague(league.ID, req.TeamIDs); err != nil {
-		return nil, fmt.Errorf("standings başlatılamadı: %w", err)
+		return nil, fmt.Errorf("failed to initialize standings: %w", err)
 	}
 
 	// Fetch teams
@@ -59,7 +59,7 @@ func (s *leagueService) CreateLeague(req model.CreateLeagueRequest) (*model.Leag
 	// Generate fixtures
 	matches := GenerateFixtures(league.ID, teams)
 	if err := s.matchRepo.CreateBatch(matches); err != nil {
-		return nil, fmt.Errorf("fikstür oluşturulamadı: %w", err)
+		return nil, fmt.Errorf("failed to generate fixtures: %w", err)
 	}
 
 	// Set league status to active
@@ -126,7 +126,7 @@ func (s *leagueService) GetPredictions(leagueID int) ([]model.Prediction, error)
 
 	// No predictions before week 4
 	if league.CurrentWeek < 4 {
-		return nil, fmt.Errorf("tahmin için en az 4 hafta oynanmalı")
+		return nil, fmt.Errorf("at least 4 weeks must be played for predictions")
 	}
 
 	standings, err := s.standingRepo.GetByLeagueID(leagueID)

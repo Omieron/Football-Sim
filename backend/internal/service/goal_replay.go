@@ -59,7 +59,7 @@ func pt(x, y float64, attackRight bool) model.GoalReplayPoint {
 
 func templateCounter(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "counter", label: "Kontra atak", duration: 3200,
+		id: "counter", label: "Counter attack", duration: 3200,
 		frames: []rawKeyframe{
 			{0, [2]float64{38, 52}, map[string][2]float64{
 				"assister": {36, 52}, "scorer": {58, 44}, "def1": {48, 58}, "def2": {52, 38}, "gk": {94, 50},
@@ -79,7 +79,7 @@ func templateCounter(attackRight bool) replayTemplate {
 
 func templateWideCross(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "wide_cross", label: "Orta & bitiriş", duration: 3600,
+		id: "wide_cross", label: "Cross & finish", duration: 3600,
 		frames: []rawKeyframe{
 			{0, [2]float64{72, 18}, map[string][2]float64{
 				"assister": {70, 16}, "scorer": {78, 52}, "def1": {74, 28}, "def2": {80, 48}, "gk": {94, 50},
@@ -99,7 +99,7 @@ func templateWideCross(attackRight bool) replayTemplate {
 
 func templateCornerTop(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "corner_top", label: "Korner (kafa)", duration: 3400,
+		id: "corner_top", label: "Corner (header)", duration: 3400,
 		frames: []rawKeyframe{
 			{0, [2]float64{94, 10}, map[string][2]float64{
 				"assister": {93, 8}, "scorer": {84, 46}, "def1": {86, 38}, "def2": {88, 52}, "gk": {94, 50},
@@ -119,7 +119,7 @@ func templateCornerTop(attackRight bool) replayTemplate {
 
 func templateCornerBottom(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "corner_bottom", label: "Korner (kafa)", duration: 3400,
+		id: "corner_bottom", label: "Corner (header)", duration: 3400,
 		frames: []rawKeyframe{
 			{0, [2]float64{94, 90}, map[string][2]float64{
 				"assister": {93, 92}, "scorer": {84, 54}, "def1": {86, 62}, "def2": {88, 48}, "gk": {94, 50},
@@ -139,7 +139,7 @@ func templateCornerBottom(attackRight bool) replayTemplate {
 
 func templateThroughBall(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "through_ball", label: "Ara pas", duration: 3000,
+		id: "through_ball", label: "Through ball", duration: 3000,
 		frames: []rawKeyframe{
 			{0, [2]float64{58, 50}, map[string][2]float64{
 				"assister": {56, 50}, "scorer": {72, 44}, "def1": {64, 48}, "def2": {66, 54}, "gk": {94, 50},
@@ -159,7 +159,7 @@ func templateThroughBall(attackRight bool) replayTemplate {
 
 func templateCutback(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "cutback", label: "Geri pas & gol", duration: 3200,
+		id: "cutback", label: "Cutback & finish", duration: 3200,
 		frames: []rawKeyframe{
 			{0, [2]float64{90, 22}, map[string][2]float64{
 				"assister": {88, 20}, "scorer": {82, 50}, "def1": {86, 30}, "def2": {84, 48}, "gk": {94, 50},
@@ -179,7 +179,7 @@ func templateCutback(attackRight bool) replayTemplate {
 
 func templateLowCross(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "low_cross", label: "Yerden orta", duration: 3300,
+		id: "low_cross", label: "Low cross", duration: 3300,
 		frames: []rawKeyframe{
 			{0, [2]float64{78, 82}, map[string][2]float64{
 				"assister": {76, 84}, "scorer": {86, 50}, "def1": {80, 72}, "def2": {84, 54}, "gk": {94, 50},
@@ -196,7 +196,7 @@ func templateLowCross(attackRight bool) replayTemplate {
 
 func templatePenalty(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "penalty", label: "Penaltı", duration: 2800,
+		id: "penalty", label: "Penalty", duration: 2800,
 		frames: []rawKeyframe{
 			{0, [2]float64{84, 50}, map[string][2]float64{
 				"scorer": {78, 50}, "def1": {86, 46}, "gk": {94, 50},
@@ -216,7 +216,7 @@ func templatePenalty(attackRight bool) replayTemplate {
 
 func templateFreeKick(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "free_kick", label: "Serbest vuruş", duration: 3200,
+		id: "free_kick", label: "Free kick", duration: 3200,
 		frames: []rawKeyframe{
 			{0, [2]float64{70, 52}, map[string][2]float64{
 				"scorer": {68, 52}, "def1": {76, 48}, "def2": {76, 54}, "gk": {94, 50},
@@ -236,7 +236,7 @@ func templateFreeKick(attackRight bool) replayTemplate {
 
 func templateVolley(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "volley", label: "Vole", duration: 2600,
+		id: "volley", label: "Volley", duration: 2600,
 		frames: []rawKeyframe{
 			{0, [2]float64{82, 38}, map[string][2]float64{
 				"scorer": {80, 46}, "def1": {84, 42}, "def2": {86, 50}, "gk": {94, 50},
@@ -253,7 +253,7 @@ func templateVolley(attackRight bool) replayTemplate {
 
 func templateTapIn(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "tap_in", label: "Boş ağ", duration: 2200,
+		id: "tap_in", label: "Tap-in", duration: 2200,
 		frames: []rawKeyframe{
 			{0, [2]float64{88, 50}, map[string][2]float64{
 				"scorer": {86, 50}, "def1": {84, 48}, "gk": {94, 51},
@@ -270,7 +270,7 @@ func templateTapIn(attackRight bool) replayTemplate {
 
 func templateLeftChannel(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "left_channel", label: "Sol kanat", duration: 3100,
+		id: "left_channel", label: "Left channel", duration: 3100,
 		frames: []rawKeyframe{
 			{0, [2]float64{62, 28}, map[string][2]float64{
 				"scorer": {62, 28}, "def1": {68, 32}, "def2": {70, 44}, "gk": {94, 50},
@@ -290,7 +290,7 @@ func templateLeftChannel(attackRight bool) replayTemplate {
 
 func templateRightChannel(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "right_channel", label: "Sağ kanat", duration: 3100,
+		id: "right_channel", label: "Right channel", duration: 3100,
 		frames: []rawKeyframe{
 			{0, [2]float64{62, 72}, map[string][2]float64{
 				"scorer": {62, 72}, "def1": {68, 68}, "def2": {70, 56}, "gk": {94, 50},
@@ -310,7 +310,7 @@ func templateRightChannel(attackRight bool) replayTemplate {
 
 func templateSolo(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "solo", label: "Solo dripling", duration: 3000,
+		id: "solo", label: "Solo dribble", duration: 3000,
 		frames: []rawKeyframe{
 			{0, [2]float64{55, 50}, map[string][2]float64{
 				"scorer": {55, 50}, "def1": {62, 44}, "def2": {64, 56}, "gk": {94, 50},
@@ -330,7 +330,7 @@ func templateSolo(attackRight bool) replayTemplate {
 
 func templateLongShot(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "long_shot", label: "Uzaktan şut", duration: 2800,
+		id: "long_shot", label: "Long shot", duration: 2800,
 		frames: []rawKeyframe{
 			{0, [2]float64{62, 50}, map[string][2]float64{
 				"scorer": {61, 50}, "def1": {70, 46}, "def2": {72, 54}, "gk": {94, 50},
@@ -347,7 +347,7 @@ func templateLongShot(attackRight bool) replayTemplate {
 
 func templateOwnGoal(attackRight bool) replayTemplate {
 	return replayTemplate{
-		id: "own_goal", label: "Kendi kalesine", duration: 2600,
+		id: "own_goal", label: "Own goal", duration: 2600,
 		frames: []rawKeyframe{
 			{0, [2]float64{88, 52}, map[string][2]float64{
 				"scorer": {89, 52}, "def1": {82, 48}, "gk": {94, 50},

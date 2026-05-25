@@ -55,7 +55,7 @@ func (s *matchService) PlayWeek(leagueID, week int) ([]model.Match, error) {
 	// Check if already played
 	for _, m := range matches {
 		if m.Played {
-			return nil, fmt.Errorf("%d. hafta zaten oynanmış", week)
+			return nil, fmt.Errorf("week %d has already been played", week)
 		}
 	}
 
@@ -71,6 +71,7 @@ func (s *matchService) PlayWeek(leagueID, week int) ([]model.Match, error) {
 
 		// Simulate the match
 		score := SimulateMatchDetailed(*homeTeam, *awayTeam)
+		MaybeApplyExtraTime(&score)
 
 		// Update the score
 		if err := s.matchRepo.UpdateScore(m.ID, score.HomeGoals, score.AwayGoals); err != nil {
@@ -119,12 +120,12 @@ func (s *matchService) PlayAll(leagueID int) error {
 		return err
 	}
 	if len(weeks) == 0 {
-		return fmt.Errorf("tüm maçlar zaten oynanmış")
+		return fmt.Errorf("all matches have already been played")
 	}
 
 	for _, w := range weeks {
 		if _, err := s.PlayWeek(leagueID, w); err != nil {
-			return fmt.Errorf("hafta %d oynanırken hata: %w", w, err)
+			return fmt.Errorf("error playing week %d: %w", w, err)
 		}
 	}
 
@@ -138,7 +139,7 @@ func (s *matchService) UpdateMatchScore(id int, req model.UpdateMatchRequest) (*
 		return nil, err
 	}
 	if !match.Played {
-		return nil, fmt.Errorf("maç henüz oynanmamış")
+		return nil, fmt.Errorf("match has not been played yet")
 	}
 
 	// Update score (trigger updates standings automatically)
@@ -182,7 +183,7 @@ func (s *matchService) DeleteMatchEvent(matchID, eventID int) error {
 		return err
 	}
 	if !match.Played {
-		return fmt.Errorf("maç henüz oynanmamış")
+		return fmt.Errorf("match has not been played yet")
 	}
 	return s.eventRepo.DeleteByID(matchID, eventID)
 }

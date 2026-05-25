@@ -138,7 +138,7 @@ export default function GoalReplay({ event, match, onDone, compact = false }) {
           fontSize: 9, fontWeight: 700, letterSpacing: '0.14em',
           textTransform: 'uppercase', color: 'var(--acid)',
         }}>
-          Gol tekrarı · {event.minute}'
+          Goal replay · {event.minute}'
         </span>
         <span style={{ fontSize: 10, color: 'rgba(237,232,220,0.45)' }}>{scene.label}</span>
       </div>

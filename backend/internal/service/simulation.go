@@ -24,6 +24,8 @@ type SimulatedScore struct {
 	AwayRegular  int
 	HomeOwnGoals int // conceded by home → counts for away
 	AwayOwnGoals int // conceded by away → counts for home
+	HomeExtra    int // uzatma golleri
+	AwayExtra    int
 }
 
 // SimulateMatch returns the final score for a match.
@@ -163,6 +165,23 @@ func poissonRandom(lambda float64) int {
 	return k - 1
 }
 
+// MaybeApplyExtraTime — beraberlikte nadiren uzatma golü ekler.
+func MaybeApplyExtraTime(score *SimulatedScore) {
+	if score.HomeGoals != score.AwayGoals {
+		return
+	}
+	if rand.Float64() > 0.07 {
+		return
+	}
+	if rand.Intn(2) == 0 {
+		score.HomeGoals++
+		score.HomeExtra++
+	} else {
+		score.AwayGoals++
+		score.AwayExtra++
+	}
+}
+
 // GenerateMatchEvents builds timeline events from a simulated score.
 func GenerateMatchEvents(
 	matchID int,
@@ -185,6 +204,12 @@ func GenerateMatchEvents(
 	for i := 0; i < score.AwayOwnGoals; i++ {
 		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "own_goal"))
 	}
+	for i := 0; i < score.HomeExtra; i++ {
+		events = append(events, buildGoalEventAtMinute(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "goal", randomExtraMinute(usedMinutes)))
+	}
+	for i := 0; i < score.AwayExtra; i++ {
+		events = append(events, buildGoalEventAtMinute(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "goal", randomExtraMinute(usedMinutes)))
+	}
 
 	events = append(events, generateCards(matchID, homeTeam, homePlayers, usedMinutes)...)
 	events = append(events, generateCards(matchID, awayTeam, awayPlayers, usedMinutes)...)
@@ -192,6 +217,8 @@ func GenerateMatchEvents(
 	events = append(events, generateSummaryEvents(matchID, homeTeam, homePlayers)...)
 	events = append(events, generateSummaryEvents(matchID, awayTeam, awayPlayers)...)
 	events = append(events, generateVARCancelledGoal(matchID, homeTeam, awayTeam, homePlayers, awayPlayers)...)
+
+	applyStoppageMinutes(&events)
 
 	sort.Slice(events, func(i, j int) bool {
 		if events[i].Minute == events[j].Minute {
@@ -225,6 +252,19 @@ func eventOrder(t string) int {
 	}
 }
 
+func buildGoalEventAtMinute(
+	matchID int,
+	homeTeam, awayTeam model.Team,
+	team model.Team,
+	players []model.Player,
+	usedMinutes map[int]bool,
+	eventType string,
+	minute int,
+) model.MatchEvent {
+	usedMinutes[minute] = true
+	return buildGoalEventCore(matchID, homeTeam, awayTeam, team, players, eventType, minute)
+}
+
 func buildGoalEvent(
 	matchID int,
 	homeTeam, awayTeam model.Team,
@@ -234,6 +274,17 @@ func buildGoalEvent(
 	eventType string,
 ) model.MatchEvent {
 	minute := randomMinute(usedMinutes)
+	return buildGoalEventCore(matchID, homeTeam, awayTeam, team, players, eventType, minute)
+}
+
+func buildGoalEventCore(
+	matchID int,
+	homeTeam, awayTeam model.Team,
+	team model.Team,
+	players []model.Player,
+	eventType string,
+	minute int,
+) model.MatchEvent {
 	scorer := randomScorer(players)
 
 	e := model.MatchEvent{
@@ -432,6 +483,58 @@ func randomMinute(used map[int]bool) int {
 		}
 	}
 	return 90
+}
+
+func randomExtraMinute(used map[int]bool) int {
+	for attempts := 0; attempts < 50; attempts++ {
+		m := 101 + rand.Intn(15)
+		if !used[m] {
+			used[m] = true
+			return m
+		}
+	}
+	for m := 101; m <= 115; m++ {
+		if !used[m] {
+			used[m] = true
+			return m
+		}
+	}
+	return 105
+}
+
+// applyStoppageMinutes moves some 2nd-half events into 90+X (91–99).
+func applyStoppageMinutes(events *[]model.MatchEvent) {
+	if rand.Float64() > 0.55 {
+		return
+	}
+	var idxs []int
+	for i, e := range *events {
+		if e.Minute >= 46 && e.Minute <= 89 {
+			idxs = append(idxs, i)
+		}
+	}
+	if len(idxs) == 0 {
+		return
+	}
+	n := 1 + rand.Intn(3)
+	if n > len(idxs) {
+		n = len(idxs)
+	}
+	usedStop := map[int]bool{}
+	for k := 0; k < n; k++ {
+		pick := rand.Intn(len(idxs))
+		evIdx := idxs[pick]
+		idxs = append(idxs[:pick], idxs[pick+1:]...)
+		add := 1 + rand.Intn(6)
+		for add <= 9 && usedStop[add] {
+			add++
+		}
+		if add > 9 {
+			break
+		}
+		usedStop[add] = true
+		(*events)[evIdx].Minute = 90 + add
+	}
 }
 
 func generateSummaryEvents(matchID int, team model.Team, players []model.Player) []model.MatchEvent {

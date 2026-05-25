@@ -61,7 +61,7 @@ function templateCounter(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
   return {
     id: 'counter',
-    label: 'Kontra atak',
+    label: 'Counter attack',
     duration: 3200,
     keyframes: [
       {
@@ -116,7 +116,7 @@ function templateWideCross(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
   return {
     id: 'wide_cross',
-    label: 'Orta & bitiriş',
+    label: 'Cross & finish',
     duration: 3600,
     keyframes: [
       {
@@ -169,7 +169,7 @@ function templateWideCross(attackRight) {
 
 function templateCornerTop(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'corner_top', label: 'Korner (kafa)', duration: 3400, keyframes: [
+  return { id: 'corner_top', label: 'Corner (header)', duration: 3400, keyframes: [
     { t: 0, ball: A(94, 10), positions: { assister: A(93, 8), scorer: A(84, 46), def1: A(86, 38), def2: A(88, 52), gk: A(94, 50) } },
     { t: 0.42, ball: A(88, 38), positions: { assister: A(93, 10), scorer: A(85, 44), def1: A(87, 40), def2: A(89, 50), gk: A(93, 49) } },
     { t: 1, ball: A(92, 48), positions: { assister: A(93, 12), scorer: A(88, 48), def1: A(89, 44), def2: A(90, 52), gk: A(89, 49) } },
@@ -178,7 +178,7 @@ function templateCornerTop(attackRight) {
 
 function templateCornerBottom(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'corner_bottom', label: 'Korner (kafa)', duration: 3400, keyframes: [
+  return { id: 'corner_bottom', label: 'Corner (header)', duration: 3400, keyframes: [
     { t: 0, ball: A(94, 90), positions: { assister: A(93, 92), scorer: A(84, 54), def1: A(86, 62), def2: A(88, 48), gk: A(94, 50) } },
     { t: 0.42, ball: A(88, 62), positions: { assister: A(93, 90), scorer: A(85, 52), def1: A(87, 58), def2: A(89, 50), gk: A(93, 51) } },
     { t: 1, ball: A(92, 52), positions: { assister: A(93, 88), scorer: A(88, 52), def1: A(89, 54), def2: A(90, 48), gk: A(89, 51) } },
@@ -187,7 +187,7 @@ function templateCornerBottom(attackRight) {
 
 function templateThroughBall(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'through_ball', label: 'Ara pas', duration: 3000, keyframes: [
+  return { id: 'through_ball', label: 'Through ball', duration: 3000, keyframes: [
     { t: 0, ball: A(58, 50), positions: { assister: A(56, 50), scorer: A(72, 44), def1: A(64, 48), def2: A(66, 54), gk: A(94, 50) } },
     { t: 0.72, ball: A(86, 46), positions: { assister: A(60, 52), scorer: A(84, 46), def1: A(76, 47), def2: A(78, 51), gk: A(91, 50) } },
     { t: 1, ball: A(91, 47), positions: { assister: A(62, 52), scorer: A(87, 47), def1: A(80, 48), def2: A(82, 50), gk: A(88, 49) } },
@@ -196,7 +196,7 @@ function templateThroughBall(attackRight) {
 
 function templateCutback(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'cutback', label: 'Geri pas & gol', duration: 3200, keyframes: [
+  return { id: 'cutback', label: 'Cutback & finish', duration: 3200, keyframes: [
     { t: 0, ball: A(90, 22), positions: { assister: A(88, 20), scorer: A(82, 50), def1: A(86, 30), def2: A(84, 48), gk: A(94, 50) } },
     { t: 1, ball: A(91, 49), positions: { assister: A(90, 32), scorer: A(86, 49), def1: A(89, 42), def2: A(87, 51), gk: A(89, 50) } },
   ]}
@@ -204,7 +204,7 @@ function templateCutback(attackRight) {
 
 function templateLowCross(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'low_cross', label: 'Yerden orta', duration: 3300, keyframes: [
+  return { id: 'low_cross', label: 'Low cross', duration: 3300, keyframes: [
     { t: 0, ball: A(78, 82), positions: { assister: A(76, 84), scorer: A(86, 50), def1: A(80, 72), def2: A(84, 54), gk: A(94, 50) } },
     { t: 1, ball: A(91, 50), positions: { assister: A(78, 80), scorer: A(88, 50), def1: A(84, 58), def2: A(86, 51), gk: A(89, 50) } },
   ]}
@@ -212,7 +212,7 @@ function templateLowCross(attackRight) {
 
 function templatePenalty(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'penalty', label: 'Penaltı', duration: 2800, keyframes: [
+  return { id: 'penalty', label: 'Penalty', duration: 2800, keyframes: [
     { t: 0, ball: A(84, 50), positions: { scorer: A(78, 50), def1: A(86, 46), gk: A(94, 50) } },
     { t: 0.35, ball: A(84, 50), positions: { scorer: A(82, 50), def1: A(86, 46), gk: A(93, 48) } },
     { t: 1, ball: A(92, 46), positions: { scorer: A(84, 48), def1: A(86, 46), gk: A(90, 44) } },
@@ -221,7 +221,7 @@ function templatePenalty(attackRight) {
 
 function templateFreeKick(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'free_kick', label: 'Serbest vuruş', duration: 3200, keyframes: [
+  return { id: 'free_kick', label: 'Free kick', duration: 3200, keyframes: [
     { t: 0, ball: A(70, 52), positions: { scorer: A(68, 52), def1: A(76, 48), def2: A(76, 54), gk: A(94, 50) } },
     { t: 1, ball: A(92, 43), positions: { scorer: A(71, 54), def1: A(78, 50), def2: A(78, 52), gk: A(88, 44) } },
   ]}
@@ -229,7 +229,7 @@ function templateFreeKick(attackRight) {
 
 function templateVolley(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'volley', label: 'Vole', duration: 2600, keyframes: [
+  return { id: 'volley', label: 'Volley', duration: 2600, keyframes: [
     { t: 0, ball: A(82, 38), positions: { scorer: A(80, 46), def1: A(84, 42), def2: A(86, 50), gk: A(94, 50) } },
     { t: 1, ball: A(91, 48), positions: { scorer: A(82, 48), def1: A(86, 44), def2: A(88, 50), gk: A(89, 47) } },
   ]}
@@ -237,7 +237,7 @@ function templateVolley(attackRight) {
 
 function templateTapIn(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'tap_in', label: 'Boş ağ', duration: 2200, keyframes: [
+  return { id: 'tap_in', label: 'Tap-in', duration: 2200, keyframes: [
     { t: 0, ball: A(88, 50), positions: { scorer: A(86, 50), def1: A(84, 48), gk: A(94, 51) } },
     { t: 1, ball: A(92, 50), positions: { scorer: A(89, 50), def1: A(86, 50), gk: A(91, 50) } },
   ]}
@@ -245,7 +245,7 @@ function templateTapIn(attackRight) {
 
 function templateLeftChannel(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'left_channel', label: 'Sol kanat', duration: 3100, keyframes: [
+  return { id: 'left_channel', label: 'Left channel', duration: 3100, keyframes: [
     { t: 0, ball: A(62, 28), positions: { scorer: A(62, 28), def1: A(68, 32), def2: A(70, 44), gk: A(94, 50) } },
     { t: 1, ball: A(91, 40), positions: { scorer: A(87, 40), def1: A(80, 40), def2: A(82, 46), gk: A(89, 47) } },
   ]}
@@ -253,7 +253,7 @@ function templateLeftChannel(attackRight) {
 
 function templateRightChannel(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
-  return { id: 'right_channel', label: 'Sağ kanat', duration: 3100, keyframes: [
+  return { id: 'right_channel', label: 'Right channel', duration: 3100, keyframes: [
     { t: 0, ball: A(62, 72), positions: { scorer: A(62, 72), def1: A(68, 68), def2: A(70, 56), gk: A(94, 50) } },
     { t: 1, ball: A(91, 60), positions: { scorer: A(87, 60), def1: A(80, 60), def2: A(82, 54), gk: A(89, 53) } },
   ]}
@@ -263,7 +263,7 @@ function templateSolo(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
   return {
     id: 'solo',
-    label: 'Solo dripling',
+    label: 'Solo dribble',
     duration: 3000,
     keyframes: [
       {
@@ -314,7 +314,7 @@ function templateLongShot(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
   return {
     id: 'long_shot',
-    label: 'Uzaktan şut',
+    label: 'Long shot',
     duration: 2800,
     keyframes: [
       {
@@ -355,7 +355,7 @@ function templateOwnGoal(attackRight) {
   const A = (x, y) => pt(x, y, attackRight)
   return {
     id: 'own_goal',
-    label: 'Kendi kalesine',
+    label: 'Own goal',
     duration: 2600,
     keyframes: [
       {

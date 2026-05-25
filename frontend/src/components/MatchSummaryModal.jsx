@@ -1,29 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
 import GoalReplay from './GoalReplay'
-import {
-  eventIcon,
-  eventTypeLabel,
-  eventDescription,
-  isGoalEvent,
-  sortEvents,
-} from '../utils/matchEvents'
+import MatchEventFeed from './MatchEventFeed'
+import { isGoalEvent, sortEvents } from '../utils/matchEvents'
 
 export default function MatchSummaryModal({ match, onClose }) {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
-  const [deletingId, setDeletingId] = useState(null)
   const [replayEvent, setReplayEvent] = useState(null)
   const [replaying, setReplaying] = useState(false)
   const goalQueueRef = useRef([])
 
-  function loadEvents() {
-    return api.get(`/api/matches/${match.id}/events`)
-      .then(r => setEvents(sortEvents(r.data.data || [])))
-  }
-
   useEffect(() => {
-    loadEvents().finally(() => setLoading(false))
+    api.get(`/api/matches/${match.id}/events`)
+      .then(r => setEvents(sortEvents(r.data.data || [])))
+      .finally(() => setLoading(false))
   }, [match.id])
 
   const goals = events.filter(isGoalEvent)
@@ -44,19 +35,6 @@ export default function MatchSummaryModal({ match, onClose }) {
     }
   }
 
-  async function handleDelete(eventId) {
-    if (!window.confirm('Bu olayı maç özetinden kaldırmak istiyor musun?')) return
-    setDeletingId(eventId)
-    try {
-      await api.delete(`/api/matches/${match.id}/events/${eventId}`)
-      setEvents(prev => prev.filter(e => e.id !== eventId))
-    } catch {
-      window.alert('Olay silinemedi.')
-    } finally {
-      setDeletingId(null)
-    }
-  }
-
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
@@ -71,7 +49,7 @@ export default function MatchSummaryModal({ match, onClose }) {
         background: 'var(--dark)',
         border: '1px solid var(--border)',
       }}>
-        <div className="label" style={{ marginBottom: 8 }}>Maç Özeti</div>
+        <div className="label" style={{ marginBottom: 8 }}>Match Info</div>
         <div style={{
           fontSize: 20, fontWeight: 700, letterSpacing: '-0.03em',
           color: 'var(--cream)', marginBottom: 20,
@@ -87,9 +65,9 @@ export default function MatchSummaryModal({ match, onClose }) {
             onClick={startMatchReplay}
             disabled={replaying}
             className="btn-acid"
-            style={{ width: '100%', marginBottom: replayEvent ? 16 : 20 }}
+            style={{ width: '100%', marginBottom: replayEvent ? 16 : 20, justifyContent: 'center' }}
           >
-            {replaying ? 'Goller oynatılıyor…' : `▶ Maçı Tekrar Oynat (${goals.length} gol)`}
+            {replaying ? 'Replaying goals…' : `▶ Replay Match (${goals.length} goals)`}
           </button>
         )}
 
@@ -104,69 +82,19 @@ export default function MatchSummaryModal({ match, onClose }) {
 
         {!loading && events.length === 0 && (
           <p style={{ fontSize: 12, color: 'rgba(237,232,220,0.3)', marginBottom: 20 }}>
-            Bu maç için kayıtlı olay yok.
+            No recorded events for this match.
           </p>
         )}
 
         {!loading && events.length > 0 && (
           <>
-            <div className="label" style={{ marginBottom: 10 }}>Maç Akışı</div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {events.map((e) => {
-                const { primary, secondary } = eventDescription(e, match)
-                return (
-                  <div
-                    key={e.id ?? `${e.minute}-${e.type}-${e.player_name}`}
-                    style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 10,
-                      padding: '10px 0', borderBottom: '1px solid var(--border)',
-                      fontSize: 12,
-                    }}
-                  >
-                    <span style={{ fontFamily: 'monospace', color: 'var(--acid)', minWidth: 28, flexShrink: 0 }}>
-                      {e.minute}'
-                    </span>
-                    <span style={{ flexShrink: 0 }}>{eventIcon(e.type)}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ color: 'rgba(237,232,220,0.45)', fontSize: 10, marginBottom: 2 }}>
-                        {eventTypeLabel(e.type)}
-                      </div>
-                      <div style={{ color: 'var(--cream)', fontWeight: 600 }}>{primary}</div>
-                      {secondary && (
-                        <div style={{ color: 'rgba(237,232,220,0.35)', fontSize: 11, marginTop: 2 }}>
-                          {secondary}
-                        </div>
-                      )}
-                    </div>
-                    {e.id > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(e.id)}
-                        disabled={deletingId === e.id}
-                        title="Olayı kaldır"
-                        style={{
-                          flexShrink: 0,
-                          background: 'none',
-                          border: '1px solid var(--border)',
-                          color: 'rgba(237,232,220,0.35)',
-                          cursor: deletingId === e.id ? 'wait' : 'pointer',
-                          fontSize: 11,
-                          padding: '4px 8px',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {deletingId === e.id ? '…' : 'Sil'}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            <div className="label" style={{ marginBottom: 10 }}>Match Timeline</div>
+            <MatchEventFeed events={events} match={match} />
           </>
         )}
 
-        <button onClick={onClose} className="btn-outline" style={{ width: '100%', marginTop: 24 }}>
-          Kapat
+        <button onClick={onClose} className="btn-outline" style={{ width: '100%', marginTop: 24, justifyContent: 'center' }}>
+          Close
         </button>
       </div>
     </div>

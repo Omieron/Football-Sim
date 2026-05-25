@@ -30,7 +30,7 @@ func (s *teamService) CreateTeam(req model.CreateTeamRequest) (*model.Team, erro
 		Defense:   req.Defense,
 	}
 	if err := s.teamRepo.Create(team); err != nil {
-		return nil, fmt.Errorf("takım oluşturulamadı: %w", err)
+		return nil, fmt.Errorf("failed to create team: %w", err)
 	}
 	return team, nil
 }

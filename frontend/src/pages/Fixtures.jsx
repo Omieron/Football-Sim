@@ -9,9 +9,6 @@ export default function Fixtures() {
   const [selectedId, setSelectedId] = useState(null)
   const [fixtures, setFixtures] = useState([])
   const [loading, setLoading] = useState(false)
-  const [editMatch, setEditMatch] = useState(null)
-  const [editHome, setEditHome] = useState('')
-  const [editAway, setEditAway] = useState('')
   const [summaryMatch, setSummaryMatch] = useState(null)
   const [headerRef, headerVisible] = useReveal()
 
@@ -36,25 +33,6 @@ export default function Fixtures() {
     acc[m.week].push(m)
     return acc
   }, {})
-
-  function openEdit(match) {
-    setEditMatch(match)
-    setEditHome(match.home_goals)
-    setEditAway(match.away_goals)
-  }
-
-  async function saveEdit() {
-    setSaving(true)
-    await api.put(`/api/matches/${editMatch.id}`, {
-      home_goals: Number(editHome),
-      away_goals: Number(editAway),
-    })
-    setFixtures(prev => prev.map(m =>
-      m.id === editMatch.id ? { ...m, home_goals: Number(editHome), away_goals: Number(editAway) } : m
-    ))
-    setEditMatch(null)
-    setSaving(false)
-  }
 
   return (
     <>
@@ -128,7 +106,7 @@ export default function Fixtures() {
                 )}
               </div>
               {grouped[week].map(m => (
-                <MatchCard key={m.id} match={m} onEdit={openEdit} onSummary={setSummaryMatch} />
+                <MatchCard key={m.id} match={m} onSummary={setSummaryMatch} />
               ))}
             </div>
           )
@@ -137,72 +115,6 @@ export default function Fixtures() {
 
       {summaryMatch && (
         <MatchSummaryModal match={summaryMatch} onClose={() => setSummaryMatch(null)} />
-      )}
-
-      {/* Edit score modal */}
-      {editMatch && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(10,10,10,0.93)', backdropFilter: 'blur(12px)',
-          padding: 24,
-        }}>
-          <div style={{
-            width: '100%', maxWidth: 360,
-            padding: '36px 32px',
-            background: 'var(--dark)',
-            border: '1px solid var(--border)',
-          }}>
-            <div className="label" style={{ marginBottom: 6 }}>Edit Result</div>
-            <div style={{
-              fontSize: 18, fontWeight: 700, letterSpacing: '-0.03em',
-              color: 'var(--cream)', marginBottom: 32, lineHeight: 1.3,
-            }}>
-              {editMatch.home_team_name}
-              <span style={{ color: 'rgba(237,232,220,0.2)', margin: '0 10px' }}>vs</span>
-              {editMatch.away_team_name}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
-              <input
-                type="number" min="0"
-                value={editHome}
-                onChange={e => setEditHome(e.target.value)}
-                style={{
-                  width: 64, textAlign: 'center',
-                  background: 'transparent', border: 'none',
-                  borderBottom: '1px solid var(--cream)',
-                  color: 'var(--cream)', fontSize: 28, fontWeight: 700,
-                  fontFamily: 'inherit', outline: 'none', padding: '4px 0',
-                  letterSpacing: '-0.04em',
-                }}
-              />
-              <span style={{ color: 'rgba(237,232,220,0.2)', fontSize: 24 }}>–</span>
-              <input
-                type="number" min="0"
-                value={editAway}
-                onChange={e => setEditAway(e.target.value)}
-                style={{
-                  width: 64, textAlign: 'center',
-                  background: 'transparent', border: 'none',
-                  borderBottom: '1px solid var(--cream)',
-                  color: 'var(--cream)', fontSize: 28, fontWeight: 700,
-                  fontFamily: 'inherit', outline: 'none', padding: '4px 0',
-                  letterSpacing: '-0.04em',
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={saveEdit} disabled={saving} className="btn-acid" style={{ flex: 1 }}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-              <button onClick={() => setEditMatch(null)} className="btn-ghost" style={{ flex: 1 }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </>
   )
