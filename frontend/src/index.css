@@ -179,6 +179,163 @@ body::after {
 .editorial-input::placeholder { color: rgba(237,232,220,0.25); }
 .editorial-input:focus { border-bottom-color: var(--acid); }
 
+/* ── League select ───────────────────────────────────── */
+.league-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.league-select-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--cream);
+  padding: 10px 14px;
+  background: var(--mid);
+  border: 1px solid var(--border);
+}
+
+.league-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--mid);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ede8dc' fill-opacity='0.45' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  border: 1px solid var(--border);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  padding: 10px 36px 10px 14px;
+  min-width: min(280px, 100%);
+  max-width: 100%;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.league-select:hover,
+.league-select:focus {
+  border-color: rgba(212, 255, 0, 0.45);
+  box-shadow: 0 0 0 1px rgba(212, 255, 0, 0.08);
+}
+
+.league-select option {
+  background: var(--dark);
+  color: var(--cream);
+  font-weight: 400;
+}
+
+.league-select-hero {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  padding: 0 28px 4px 0;
+  margin-bottom: 6;
+  outline: none;
+  cursor: pointer;
+  min-width: 180px;
+  max-width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ede8dc' fill-opacity='0.45' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px bottom 10px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.league-select-hero:hover,
+.league-select-hero:focus {
+  border-bottom-color: var(--acid);
+  color: var(--cream);
+}
+
+.league-select-hero option {
+  background: var(--dark);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* ── Modal overlay ───────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 10, 10, 0.52);
+  backdrop-filter: blur(6px);
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 560;
+  max-height: 90vh;
+  padding: 32px 28px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Fixtures week bar ───────────────────────────────── */
+.fixtures-week-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 0 16px;
+  margin-bottom: 8px;
+  background: rgba(10, 10, 10, 0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.fixtures-week-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.fixtures-week-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--cream);
+  font-size: 18px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.fixtures-week-btn:hover:not(:disabled) {
+  border-color: var(--acid);
+  color: var(--acid);
+  background: rgba(212, 255, 0, 0.04);
+}
+
+.fixtures-week-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
 /* ── Divider ───────────────────────────────────────── */
 .rule { width: 100%; height: 1px; background: var(--border); }
 

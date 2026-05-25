@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
+import LeagueSelect from '../components/LeagueSelect'
 import { useReveal } from '../hooks/useReveal'
 
 const LIST_INITIAL = 10
@@ -240,21 +241,18 @@ export default function Stats() {
           Stats
         </div>
         {leagues.length > 0 && (
-          <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <select
-              value={selectedId || ''}
-              onChange={e => setSelectedId(Number(e.target.value))}
-              style={{
-                background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)',
-                color: 'var(--cream)', fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em',
-                fontFamily: 'inherit', padding: '0 0 4px', outline: 'none', cursor: 'pointer',
-              }}
-            >
-              {leagues.map(l => (
-                <option key={l.id} value={l.id} style={{ background: 'var(--dark)', fontSize: 14 }}>{l.name}</option>
-              ))}
-            </select>
-            {loading && <div className="spin" />}
+          <div style={{ marginTop: 24 }}>
+            <LeagueSelect
+              leagues={leagues}
+              value={selectedId}
+              onChange={setSelectedId}
+            />
+            {loading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+                <div className="spin" />
+                <span className="label">Loading…</span>
+              </div>
+            )}
           </div>
         )}
       </div>

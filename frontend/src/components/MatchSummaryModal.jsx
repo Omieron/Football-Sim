@@ -36,21 +36,22 @@ export default function MatchSummaryModal({ match, onClose }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(10,10,10,0.93)', backdropFilter: 'blur(12px)',
-      padding: 24,
-    }}>
-      <div className="scroll-y" style={{
-        width: '100%', maxWidth: 560,
-        maxHeight: '90vh',
-        padding: '32px 28px',
-        background: 'var(--dark)',
-        border: '1px solid var(--border)',
-      }}>
+    <div
+      className="modal-overlay"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="scroll-y modal-panel"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="match-summary-title"
+      >
         <div className="label" style={{ marginBottom: 8 }}>Match Info</div>
-        <div style={{
+        <div
+          id="match-summary-title"
+          style={{
           fontSize: 20, fontWeight: 700, letterSpacing: '-0.03em',
           color: 'var(--cream)', marginBottom: 20,
         }}>

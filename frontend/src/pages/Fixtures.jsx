@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import MatchCard from '../components/MatchCard'
 import MatchSummaryModal from '../components/MatchSummaryModal'
+import LeagueSelect from '../components/LeagueSelect'
 import { useReveal } from '../hooks/useReveal'
 
 export default function Fixtures() {
   const [leagues, setLeagues] = useState([])
   const [selectedId, setSelectedId] = useState(null)
+  const [league, setLeague] = useState(null)
   const [fixtures, setFixtures] = useState([])
+  const [viewWeek, setViewWeek] = useState(1)
   const [loading, setLoading] = useState(false)
   const [summaryMatch, setSummaryMatch] = useState(null)
   const [headerRef, headerVisible] = useReveal()
@@ -23,10 +26,23 @@ export default function Fixtures() {
   useEffect(() => {
     if (!selectedId) return
     setLoading(true)
-    api.get(`/api/leagues/${selectedId}/fixtures`)
-      .then(r => setFixtures(r.data.data || []))
+    Promise.all([
+      api.get(`/api/leagues/${selectedId}`),
+      api.get(`/api/leagues/${selectedId}/fixtures`),
+    ])
+      .then(([lg, fx]) => {
+        const lgData = lg.data.data
+        const allMatches = fx.data.data || []
+        const maxWeek = allMatches.reduce((m, x) => Math.max(m, x.week), 0)
+        setLeague(lgData)
+        setFixtures(allMatches)
+        const playedWeek = Math.max(1, lgData?.current_week || 1)
+        setViewWeek(Math.min(Math.max(1, playedWeek), maxWeek || 1))
+      })
       .finally(() => setLoading(false))
   }, [selectedId])
+
+  const totalWeeks = fixtures.reduce((m, x) => Math.max(m, x.week), 0)
 
   const grouped = fixtures.reduce((acc, m) => {
     if (!acc[m.week]) acc[m.week] = []
@@ -34,13 +50,17 @@ export default function Fixtures() {
     return acc
   }, {})
 
+  const weekMatches = grouped[viewWeek] || []
+  const weekPlayed = weekMatches.length > 0 && weekMatches.every(m => m.played)
+  const weekUpcoming = league && viewWeek > league.current_week
+
   return (
     <>
       {/* Page header */}
-      <div ref={headerRef} className={`reveal ${headerVisible ? 'in' : ''}`} style={{ marginBottom: 56 }}>
+      <div ref={headerRef} className={`reveal ${headerVisible ? 'in' : ''}`} style={{ marginBottom: 40 }}>
         <div style={{
           display: 'flex', alignItems: 'flex-end',
-          justifyContent: 'space-between', flexWrap: 'wrap', gap: 20,
+          justifyContent: 'space-between', flexWrap: 'wrap', gap: 24,
         }}>
           <div>
             <div className="label" style={{ marginBottom: 10 }}>Season Schedule</div>
@@ -52,22 +72,11 @@ export default function Fixtures() {
             </div>
           </div>
 
-          {leagues.length > 0 && (
-            <select
-              value={selectedId || ''}
-              onChange={e => setSelectedId(Number(e.target.value))}
-              style={{
-                background: 'transparent', border: 'none',
-                borderBottom: '1px solid var(--border)',
-                color: 'var(--cream)', fontSize: 11, fontFamily: 'inherit',
-                padding: '4px 0', outline: 'none', cursor: 'pointer', minWidth: 140,
-              }}
-            >
-              {leagues.map(l => (
-                <option key={l.id} value={l.id} style={{ background: 'var(--dark)' }}>{l.name}</option>
-              ))}
-            </select>
-          )}
+          <LeagueSelect
+            leagues={leagues}
+            value={selectedId}
+            onChange={setSelectedId}
+          />
         </div>
       </div>
 
@@ -78,40 +87,82 @@ export default function Fixtures() {
         </div>
       )}
 
-      {/* Week sections */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
-        {Object.keys(grouped).sort((a, b) => Number(a) - Number(b)).map(week => {
-          const weekPlayed = grouped[week].every(m => m.played)
-          return (
-            <div key={week}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                paddingBottom: 12, marginBottom: 4,
-                borderBottom: '1px solid var(--border)',
-              }}>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.2em',
-                  textTransform: 'uppercase', color: 'rgba(237,232,220,0.25)',
-                }}>
-                  Matchday {week}
-                </span>
-                {weekPlayed && (
-                  <span style={{
-                    fontSize: 8, fontWeight: 700, letterSpacing: '0.12em',
-                    textTransform: 'uppercase', color: 'var(--pink)',
-                    padding: '2px 6px', border: '1px solid var(--pink)',
-                  }}>
-                    Played
+      {!loading && totalWeeks > 0 && (
+        <>
+          <div className="fixtures-week-bar">
+            <div>
+              <div className="label" style={{ marginBottom: 6 }}>
+                Matchday {viewWeek}
+                {weekUpcoming && (
+                  <span style={{ color: 'var(--acid)', marginLeft: 6 }}>upcoming</span>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(237,232,220,0.25)', letterSpacing: '0.06em' }}>
+                Week {viewWeek} of {totalWeeks}
+                {league && (
+                  <span style={{ marginLeft: 8, color: 'rgba(237,232,220,0.18)' }}>
+                    · {league.current_week} played
                   </span>
                 )}
               </div>
-              {grouped[week].map(m => (
-                <MatchCard key={m.id} match={m} onSummary={setSummaryMatch} />
-              ))}
             </div>
-          )
-        })}
-      </div>
+
+            <div className="fixtures-week-nav">
+              <button
+                type="button"
+                className="fixtures-week-btn"
+                disabled={viewWeek <= 1}
+                onClick={() => setViewWeek(w => w - 1)}
+                aria-label="Previous matchday"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                className="fixtures-week-btn"
+                disabled={viewWeek >= totalWeeks}
+                onClick={() => setViewWeek(w => w + 1)}
+                aria-label="Next matchday"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              paddingBottom: 12, marginBottom: 4,
+              borderBottom: '1px solid var(--border)',
+            }}>
+              {weekPlayed && (
+                <span style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: '0.12em',
+                  textTransform: 'uppercase', color: 'var(--pink)',
+                  padding: '2px 6px', border: '1px solid var(--pink)',
+                }}>
+                  Played
+                </span>
+              )}
+              {weekMatches.length === 0 && (
+                <span style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)' }}>
+                  No fixtures for this matchday.
+                </span>
+              )}
+            </div>
+
+            {weekMatches.map(m => (
+              <MatchCard key={m.id} match={m} onSummary={setSummaryMatch} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {!loading && totalWeeks === 0 && selectedId && (
+        <p style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)', lineHeight: 1.6, padding: '8px 0' }}>
+          No fixtures yet for this league.
+        </p>
+      )}
 
       {summaryMatch && (
         <MatchSummaryModal match={summaryMatch} onClose={() => setSummaryMatch(null)} />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../api/axios'
 import StandingsTable from '../components/StandingsTable'
 import PredictionWidget from '../components/PredictionWidget'
+import LeagueSelect from '../components/LeagueSelect'
 import LiveMatchModal from '../components/LiveMatchModal'
 
 /* ── Match banner carousel ──────────────────────────────── */
@@ -537,16 +538,12 @@ export default function Dashboard() {
       }}>
         {/* Left: name + meta */}
         <div>
-          {leagues.length > 1 ? (
-            <select value={selectedId || ''} onChange={e => setSelectedId(Number(e.target.value))}
-              style={{ background: 'transparent', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--cream)', fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', fontFamily: 'inherit', padding: '0 0 4px', outline: 'none', cursor: 'pointer', marginBottom: 6 }}>
-              {leagues.map(l => <option key={l.id} value={l.id} style={{ background: 'var(--dark)', fontSize: 14, fontWeight: 400 }}>{l.name}</option>)}
-            </select>
-          ) : (
-            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--cream)', marginBottom: 6 }}>
-              {league?.name || '—'}
-            </div>
-          )}
+          <LeagueSelect
+            leagues={leagues}
+            value={selectedId}
+            onChange={setSelectedId}
+            variant="hero"
+          />
           {league && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span className="label">Week {league.current_week} of {totalWeeks}</span>
