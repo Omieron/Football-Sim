@@ -382,7 +382,7 @@ Returns all fixtures (matches) for a league.
 ---
 
 ### GET /api/leagues/:id/predictions
-Returns championship probabilities calculated via Monte Carlo simulation. At least 1 week must have been played.
+Returns championship probabilities calculated via Monte Carlo simulation (1000 runs). **At least 4 matchdays must be completed** before this endpoint returns data — calling it earlier returns `400`.
 
 **URL Params:** `id` — league id
 
@@ -472,7 +472,7 @@ Simulates a specific week and saves the results.
 ---
 
 ### POST /api/leagues/:id/play-all
-Simulates all remaining weeks in the league at once.
+Simulates all remaining weeks in the league at once. Returns every week's results grouped by matchday.
 
 **URL Params:** `id` — league id
 
@@ -481,7 +481,30 @@ Simulates all remaining weeks in the league at once.
 **Response:**
 ```json
 {
-  "message": "tüm maçlar oynanıldı"
+  "message": "all matches played",
+  "data": [
+    {
+      "week": 5,
+      "matches": [
+        {
+          "id": 9,
+          "week": 5,
+          "home_team_name": "Arsenal",
+          "away_team_name": "Liverpool",
+          "home_goals": 2,
+          "away_goals": 1,
+          "played": true,
+          "events": [
+            { "type": "goal", "minute": 34, "player_name": "Saka", "team_name": "Arsenal" }
+          ]
+        }
+      ]
+    },
+    {
+      "week": 6,
+      "matches": [ ... ]
+    }
+  ]
 }
 ```
 
