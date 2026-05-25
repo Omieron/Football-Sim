@@ -9,9 +9,23 @@ import Import from './pages/Import'
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen" style={{ backgroundColor: '#0a0a0f', color: '#e2e8f0' }}>
+      {/* Abstract blobs */}
+      <div style={{
+        position: 'fixed', top: '-15vh', right: '-8vw',
+        width: '55vw', height: '55vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(255,31,90,0.12) 0%, transparent 65%)',
+        filter: 'blur(90px)', pointerEvents: 'none', zIndex: 0,
+      }} />
+      <div style={{
+        position: 'fixed', bottom: '-10vh', left: '-5vw',
+        width: '40vw', height: '40vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(212,255,0,0.07) 0%, transparent 65%)',
+        filter: 'blur(110px)', pointerEvents: 'none', zIndex: 0,
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
         <Navbar />
-        <main className="max-w-7xl mx-auto px-4 py-6">
+        <main style={{ padding: '0 12px 48px' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/fixtures" element={<Fixtures />} />
