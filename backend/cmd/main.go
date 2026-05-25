@@ -22,7 +22,7 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
-	log.Println("✅ PostgreSQL connected")
+	log.Println("PostgreSQL connected")
 
 	// Repositories
 	teamRepo     := repository.NewTeamRepository(db)
@@ -106,7 +106,7 @@ func main() {
 		}
 	}
 
-	log.Printf("🚀 Server started: http://localhost:%s", cfg.ServerPort)
+	log.Printf("Server started: http://localhost:%s", cfg.ServerPort)
 	if err := r.Run(":" + cfg.ServerPort); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
