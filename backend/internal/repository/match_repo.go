@@ -242,6 +242,21 @@ func (r *matchEventRepository) DeleteByMatchID(matchID int) error {
 	return err
 }
 
+func (r *matchEventRepository) DeleteByID(matchID, eventID int) error {
+	res, err := r.db.Exec(`DELETE FROM match_events WHERE id = $1 AND match_id = $2`, eventID, matchID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("event not found")
+	}
+	return nil
+}
+
 func (r *matchEventRepository) GetTopScorers(leagueID int, limit int) ([]model.TopScorer, error) {
 	query := `
 		SELECT p.name, t.name, COALESCE(t.crest_url,''), COUNT(*) as goals

@@ -170,3 +170,22 @@ func (h *MatchHandler) GetEvents(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"data": events})
 }
+
+// DELETE /api/matches/:id/events/:eventId
+func (h *MatchHandler) DeleteEvent(c *gin.Context) {
+	matchID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid match id"})
+		return
+	}
+	eventID, err := strconv.Atoi(c.Param("eventId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event id"})
+		return
+	}
+	if err := h.matchService.DeleteMatchEvent(matchID, eventID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "event deleted"})
+}

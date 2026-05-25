@@ -176,6 +176,17 @@ func (s *matchService) GetMatchEvents(matchID int) ([]model.MatchEvent, error) {
 	return s.eventRepo.GetByMatchID(matchID)
 }
 
+func (s *matchService) DeleteMatchEvent(matchID, eventID int) error {
+	match, err := s.matchRepo.GetByID(matchID)
+	if err != nil {
+		return err
+	}
+	if !match.Played {
+		return fmt.Errorf("maç henüz oynanmamış")
+	}
+	return s.eventRepo.DeleteByID(matchID, eventID)
+}
+
 func (s *matchService) GetTopScorers(leagueID int) ([]model.TopScorer, error) {
 	return s.eventRepo.GetTopScorers(leagueID, 10)
 }

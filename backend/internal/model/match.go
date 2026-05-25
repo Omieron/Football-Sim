@@ -29,7 +29,7 @@ type MatchEvent struct {
 	Position         string    `json:"position,omitempty"`
 	TeamID           int       `json:"team_id"`
 	TeamName         string    `json:"team_name,omitempty"`
-	Type             string    `json:"type"` // goal, own_goal, yellow_card, red_card
+	Type             string    `json:"type"` // goal, own_goal, yellow_card, red_card, offside, substitution, var_cancelled_goal, injury
 	Minute           int       `json:"minute"`
 	GoalReplay       *GoalReplayScene `json:"goal_replay,omitempty"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -109,6 +109,7 @@ type MatchEventRepository interface {
 	GetByMatchID(matchID int) ([]MatchEvent, error)
 	CreateBatch(events []MatchEvent) error
 	DeleteByMatchID(matchID int) error
+	DeleteByID(matchID, eventID int) error
 	GetTopScorers(leagueID int, limit int) ([]TopScorer, error)
 	GetTopAssists(leagueID int, limit int) ([]TopAssist, error)
 	GetMostCards(leagueID int, limit int) ([]MostCards, error)
@@ -121,6 +122,7 @@ type MatchService interface {
 	PlayAll(leagueID int) error
 	UpdateMatchScore(id int, req UpdateMatchRequest) (*Match, error)
 	GetMatchEvents(matchID int) ([]MatchEvent, error)
+	DeleteMatchEvent(matchID, eventID int) error
 	GetTopScorers(leagueID int) ([]TopScorer, error)
 	GetTopAssists(leagueID int) ([]TopAssist, error)
 	GetMostCards(leagueID int) ([]MostCards, error)

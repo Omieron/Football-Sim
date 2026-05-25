@@ -78,7 +78,7 @@ CREATE TABLE matches (
     CHECK (home_team_id <> away_team_id)
 );
 
--- Match events (goal, own goal, cards)
+-- Match events (goals, cards, match summary)
 CREATE TABLE match_events (
     id                  SERIAL PRIMARY KEY,
     match_id            INT NOT NULL REFERENCES matches(id)  ON DELETE CASCADE,
@@ -86,7 +86,10 @@ CREATE TABLE match_events (
     assist_player_id    INT          REFERENCES players(id)  ON DELETE SET NULL,
     assist_player_name  VARCHAR(100),
     team_id             INT NOT NULL REFERENCES teams(id),
-    type                VARCHAR(20)  NOT NULL CHECK (type IN ('goal', 'own_goal', 'yellow_card', 'red_card')),
+    type                VARCHAR(30)  NOT NULL CHECK (type IN (
+        'goal', 'own_goal', 'yellow_card', 'red_card',
+        'offside', 'substitution', 'var_cancelled_goal', 'injury'
+    )),
     minute              INT NOT NULL CHECK (minute BETWEEN 1 AND 120),
     goal_replay         JSONB,
     created_at          TIMESTAMP DEFAULT NOW()
@@ -94,6 +97,11 @@ CREATE TABLE match_events (
 
 -- Migration helper for existing databases
 ALTER TABLE match_events ADD COLUMN IF NOT EXISTS goal_replay JSONB;
+ALTER TABLE match_events DROP CONSTRAINT IF EXISTS match_events_type_check;
+ALTER TABLE match_events ADD CONSTRAINT match_events_type_check CHECK (type IN (
+    'goal', 'own_goal', 'yellow_card', 'red_card',
+    'offside', 'substitution', 'var_cancelled_goal', 'injury'
+));
 
 -- Standings (separate table — automatically updated by trigger)
 CREATE TABLE standings (

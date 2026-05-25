@@ -189,6 +189,10 @@ func GenerateMatchEvents(
 	events = append(events, generateCards(matchID, homeTeam, homePlayers, usedMinutes)...)
 	events = append(events, generateCards(matchID, awayTeam, awayPlayers, usedMinutes)...)
 
+	events = append(events, generateSummaryEvents(matchID, homeTeam, homePlayers)...)
+	events = append(events, generateSummaryEvents(matchID, awayTeam, awayPlayers)...)
+	events = append(events, generateVARCancelledGoal(matchID, homeTeam, awayTeam, homePlayers, awayPlayers)...)
+
 	sort.Slice(events, func(i, j int) bool {
 		if events[i].Minute == events[j].Minute {
 			return eventOrder(events[i].Type) < eventOrder(events[j].Type)
@@ -202,14 +206,22 @@ func eventOrder(t string) int {
 	switch t {
 	case "goal":
 		return 0
-	case "own_goal":
+	case "var_cancelled_goal":
 		return 1
-	case "yellow_card":
+	case "own_goal":
 		return 2
-	case "red_card":
+	case "yellow_card":
 		return 3
-	default:
+	case "red_card":
 		return 4
+	case "substitution":
+		return 5
+	case "offside":
+		return 6
+	case "injury":
+		return 7
+	default:
+		return 8
 	}
 }
 
@@ -420,4 +432,151 @@ func randomMinute(used map[int]bool) int {
 		}
 	}
 	return 90
+}
+
+func generateSummaryEvents(matchID int, team model.Team, players []model.Player) []model.MatchEvent {
+	var events []model.MatchEvent
+	events = append(events, generateOffsides(matchID, team, players)...)
+	events = append(events, generateSubstitutions(matchID, team, players)...)
+	events = append(events, generateInjuries(matchID, team, players)...)
+	return events
+}
+
+func generateOffsides(matchID int, team model.Team, players []model.Player) []model.MatchEvent {
+	if len(players) == 0 {
+		return nil
+	}
+	count := poissonRandom(1.1)
+	if count > 3 {
+		count = 3
+	}
+	var events []model.MatchEvent
+	for i := 0; i < count; i++ {
+		player := players[rand.Intn(len(players))]
+		events = append(events, model.MatchEvent{
+			MatchID:    matchID,
+			TeamID:     team.ID,
+			TeamName:   team.Name,
+			PlayerID:   &player.ID,
+			PlayerName: player.Name,
+			Type:       "offside",
+			Minute:     randomLooseMinute(1, 90),
+		})
+	}
+	return events
+}
+
+func generateSubstitutions(matchID int, team model.Team, players []model.Player) []model.MatchEvent {
+	if len(players) < 2 {
+		return nil
+	}
+	slots := []int{46, 58, 71, 82}
+	subCount := 3
+	if len(players) < 5 {
+		subCount = 2
+	}
+	var events []model.MatchEvent
+	usedOut := map[int]bool{}
+	usedIn := map[int]bool{}
+	for i := 0; i < subCount && i < len(slots); i++ {
+		out, in := pickSubstitutionPair(players, usedOut, usedIn)
+		if out == nil || in == nil {
+			break
+		}
+		usedOut[out.ID] = true
+		usedIn[in.ID] = true
+		minute := slots[i] + rand.Intn(5)
+		events = append(events, model.MatchEvent{
+			MatchID:          matchID,
+			TeamID:           team.ID,
+			TeamName:         team.Name,
+			PlayerID:         &out.ID,
+			PlayerName:       out.Name,
+			AssistPlayerID:   &in.ID,
+			AssistPlayerName: in.Name,
+			Type:             "substitution",
+			Minute:           minute,
+		})
+	}
+	return events
+}
+
+func pickSubstitutionPair(players []model.Player, usedOut, usedIn map[int]bool) (*model.Player, *model.Player) {
+	var outs, ins []model.Player
+	for _, p := range players {
+		if !usedOut[p.ID] {
+			outs = append(outs, p)
+		}
+		if !usedIn[p.ID] {
+			ins = append(ins, p)
+		}
+	}
+	if len(outs) == 0 || len(ins) == 0 {
+		return nil, nil
+	}
+	out := outs[rand.Intn(len(outs))]
+	for attempts := 0; attempts < 20; attempts++ {
+		in := ins[rand.Intn(len(ins))]
+		if in.ID != out.ID {
+			cp := in
+			return &out, &cp
+		}
+	}
+	return nil, nil
+}
+
+func generateInjuries(matchID int, team model.Team, players []model.Player) []model.MatchEvent {
+	if len(players) == 0 || rand.Float64() > 0.18 {
+		return nil
+	}
+	player := players[rand.Intn(len(players))]
+	return []model.MatchEvent{{
+		MatchID:    matchID,
+		TeamID:     team.ID,
+		TeamName:   team.Name,
+		PlayerID:   &player.ID,
+		PlayerName: player.Name,
+		Type:       "injury",
+		Minute:     randomLooseMinute(10, 85),
+	}}
+}
+
+func generateVARCancelledGoal(
+	matchID int,
+	homeTeam, awayTeam model.Team,
+	homePlayers, awayPlayers []model.Player,
+) []model.MatchEvent {
+	if rand.Float64() > 0.10 {
+		return nil
+	}
+	var team model.Team
+	var players []model.Player
+	if rand.Intn(2) == 0 {
+		team, players = homeTeam, homePlayers
+	} else {
+		team, players = awayTeam, awayPlayers
+	}
+	if len(players) == 0 {
+		return nil
+	}
+	scorer := randomScorer(players)
+	if scorer == nil {
+		return nil
+	}
+	return []model.MatchEvent{{
+		MatchID:    matchID,
+		TeamID:     team.ID,
+		TeamName:   team.Name,
+		PlayerID:   &scorer.ID,
+		PlayerName: scorer.Name,
+		Type:       "var_cancelled_goal",
+		Minute:     randomLooseMinute(15, 88),
+	}}
+}
+
+func randomLooseMinute(min, max int) int {
+	if max <= min {
+		return min
+	}
+	return rand.Intn(max-min+1) + min
 }

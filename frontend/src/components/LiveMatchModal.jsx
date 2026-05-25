@@ -1,37 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import GoalReplay from './GoalReplay'
-
-function eventIcon(type) {
-  if (type === 'goal') return '⚽'
-  if (type === 'own_goal') return '😬'
-  if (type === 'yellow_card') return '🟨'
-  if (type === 'red_card') return '🟥'
-  return '·'
-}
-
-function isGoalEvent(e) {
-  return e.type === 'goal' || e.type === 'own_goal'
-}
+import { eventIcon, eventDescription, scoresFromEvent, isGoalEvent } from '../utils/matchEvents'
 
 function eventLabel(e, match) {
-  if (e.type === 'own_goal') {
-    const benefited = e.team_id === match.home_team_id ? match.away_team_name : match.home_team_name
-    return { primary: `${e.player_name} (OG)`, secondary: benefited }
-  }
-  if (e.type === 'goal' && e.assist_player_name) {
-    return { primary: e.player_name, secondary: `assist: ${e.assist_player_name}` }
-  }
-  return { primary: e.player_name, secondary: e.team_name }
-}
-
-function scoresFromEvent(e, match) {
-  if (e.type === 'goal') {
-    return e.team_id === match.home_team_id ? { home: 1, away: 0 } : { home: 0, away: 1 }
-  }
-  if (e.type === 'own_goal') {
-    return e.team_id === match.home_team_id ? { home: 0, away: 1 } : { home: 1, away: 0 }
-  }
-  return { home: 0, away: 0 }
+  return eventDescription(e, match)
 }
 
 function eventKey(e) {

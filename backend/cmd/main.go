@@ -93,6 +93,7 @@ func main() {
 			matches.GET("/:id",        matchHandler.GetMatch)
 			matches.PUT("/:id",        matchHandler.UpdateScore)
 			matches.GET("/:id/events", matchHandler.GetEvents)
+			matches.DELETE("/:id/events/:eventId", matchHandler.DeleteEvent)
 		}
 
 		// Admin
