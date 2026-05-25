@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import MatchCard from '../components/MatchCard'
+import MatchSummaryModal from '../components/MatchSummaryModal'
 import { useReveal } from '../hooks/useReveal'
 
 export default function Fixtures() {
@@ -11,7 +12,7 @@ export default function Fixtures() {
   const [editMatch, setEditMatch] = useState(null)
   const [editHome, setEditHome] = useState('')
   const [editAway, setEditAway] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [summaryMatch, setSummaryMatch] = useState(null)
   const [headerRef, headerVisible] = useReveal()
 
   useEffect(() => {
@@ -127,12 +128,16 @@ export default function Fixtures() {
                 )}
               </div>
               {grouped[week].map(m => (
-                <MatchCard key={m.id} match={m} onEdit={openEdit} />
+                <MatchCard key={m.id} match={m} onEdit={openEdit} onSummary={setSummaryMatch} />
               ))}
             </div>
           )
         })}
       </div>
+
+      {summaryMatch && (
+        <MatchSummaryModal match={summaryMatch} onClose={() => setSummaryMatch(null)} />
+      )}
 
       {/* Edit score modal */}
       {editMatch && (

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"football-sim/internal/model"
 )
@@ -169,7 +170,7 @@ func (r *matchEventRepository) GetByMatchID(matchID int) ([]model.MatchEvent, er
 	query := `
 		SELECT me.id, me.match_id, me.player_id, COALESCE(p.name,''), COALESCE(p.position,''),
 		       me.assist_player_id, COALESCE(me.assist_player_name, COALESCE(ap.name, '')),
-		       me.team_id, t.name, me.type, me.minute, me.created_at
+		       me.team_id, t.name, me.type, me.minute, me.goal_replay, me.created_at
 		FROM match_events me
 		JOIN teams t ON t.id = me.team_id
 		LEFT JOIN players p ON p.id = me.player_id
@@ -186,12 +187,19 @@ func (r *matchEventRepository) GetByMatchID(matchID int) ([]model.MatchEvent, er
 	var events []model.MatchEvent
 	for rows.Next() {
 		var e model.MatchEvent
+		var replayJSON []byte
 		if err := rows.Scan(
 			&e.ID, &e.MatchID, &e.PlayerID, &e.PlayerName, &e.Position,
 			&e.AssistPlayerID, &e.AssistPlayerName,
-			&e.TeamID, &e.TeamName, &e.Type, &e.Minute, &e.CreatedAt,
+			&e.TeamID, &e.TeamName, &e.Type, &e.Minute, &replayJSON, &e.CreatedAt,
 		); err != nil {
 			return nil, err
+		}
+		if len(replayJSON) > 0 {
+			var scene model.GoalReplayScene
+			if err := json.Unmarshal(replayJSON, &scene); err == nil {
+				e.GoalReplay = &scene
+			}
 		}
 		events = append(events, e)
 	}
@@ -206,15 +214,23 @@ func (r *matchEventRepository) CreateBatch(events []model.MatchEvent) error {
 	defer tx.Rollback()
 
 	stmt, err := tx.Prepare(`
-		INSERT INTO match_events (match_id, player_id, assist_player_id, assist_player_name, team_id, type, minute)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`)
+		INSERT INTO match_events (match_id, player_id, assist_player_id, assist_player_name, team_id, type, minute, goal_replay)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	for _, e := range events {
-		if _, err := stmt.Exec(e.MatchID, e.PlayerID, e.AssistPlayerID, e.AssistPlayerName, e.TeamID, e.Type, e.Minute); err != nil {
+		var replayArg interface{}
+		if e.GoalReplay != nil {
+			b, err := json.Marshal(e.GoalReplay)
+			if err != nil {
+				return err
+			}
+			replayArg = b
+		}
+		if _, err := stmt.Exec(e.MatchID, e.PlayerID, e.AssistPlayerID, e.AssistPlayerName, e.TeamID, e.Type, e.Minute, replayArg); err != nil {
 			return err
 		}
 	}
@@ -234,7 +250,7 @@ func (r *matchEventRepository) GetTopScorers(leagueID int, limit int) ([]model.T
 		JOIN teams   t  ON t.id  = me.team_id
 		JOIN players p  ON p.id  = me.player_id
 		WHERE m.league_id = $1 AND me.type = 'goal' AND me.player_id IS NOT NULL
-		GROUP BY p.name, t.name, t.crest_url
+		GROUP BY p.id, p.name, t.name, t.crest_url
 		ORDER BY goals DESC
 		LIMIT $2`
 
@@ -257,14 +273,15 @@ func (r *matchEventRepository) GetTopScorers(leagueID int, limit int) ([]model.T
 
 func (r *matchEventRepository) GetTopAssists(leagueID int, limit int) ([]model.TopAssist, error) {
 	query := `
-		SELECT me.assist_player_name, t.name, COALESCE(t.crest_url,''), COUNT(*) as assists
+		SELECT COALESCE(ap.name, me.assist_player_name), t.name, COALESCE(t.crest_url,''), COUNT(*) as assists
 		FROM match_events me
 		JOIN matches m ON m.id = me.match_id
 		JOIN teams   t ON t.id = me.team_id
+		LEFT JOIN players ap ON ap.id = me.assist_player_id
 		WHERE m.league_id = $1
 		  AND me.type = 'goal'
 		  AND me.assist_player_name <> ''
-		GROUP BY me.assist_player_name, t.name, t.crest_url
+		GROUP BY me.assist_player_id, COALESCE(ap.name, me.assist_player_name), t.name, t.crest_url
 		ORDER BY assists DESC
 		LIMIT $2`
 
@@ -298,7 +315,7 @@ func (r *matchEventRepository) GetMostCards(leagueID int, limit int) ([]model.Mo
 		WHERE m.league_id = $1
 		  AND me.type IN ('yellow_card', 'red_card')
 		  AND me.player_id IS NOT NULL
-		GROUP BY p.name, t.name, t.crest_url
+		GROUP BY p.id, p.name, t.name, t.crest_url
 		ORDER BY total_cards DESC, red_cards DESC, yellow_cards DESC
 		LIMIT $2`
 

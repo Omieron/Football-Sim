@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function MatchCard({ match, onEdit }) {
+export default function MatchCard({ match, onEdit, onSummary }) {
   const { home_team_name, away_team_name, home_crest_url, away_crest_url, home_goals, away_goals, played } = match
   const [hovered, setHovered] = useState(false)
 
@@ -37,12 +37,18 @@ export default function MatchCard({ match, onEdit }) {
       {/* Score */}
       <div style={{ textAlign: 'center', minWidth: 72 }}>
         {played ? (
-          <span style={{
-            fontSize: 22, fontWeight: 700, letterSpacing: '-0.04em',
-            color: 'var(--cream)', lineHeight: 1,
-          }}>
+          <button
+            type="button"
+            onClick={() => onSummary?.(match)}
+          title="Maç özeti"
+            style={{
+              background: 'transparent', border: 'none', padding: 0, cursor: onSummary ? 'pointer' : 'default',
+              fontSize: 22, fontWeight: 700, letterSpacing: '-0.04em',
+              color: 'var(--cream)', lineHeight: 1, fontFamily: 'inherit',
+            }}
+          >
             {home_goals}<span style={{ color: 'rgba(237,232,220,0.2)', margin: '0 3px' }}>–</span>{away_goals}
-          </span>
+          </button>
         ) : (
           <span className="label">vs</span>
         )}

@@ -174,16 +174,16 @@ func GenerateMatchEvents(
 	usedMinutes := map[int]bool{}
 
 	for i := 0; i < score.HomeRegular; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, homePlayers, usedMinutes, "goal", 0.72))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "goal", 0.72))
 	}
 	for i := 0; i < score.AwayRegular; i++ {
-		events = append(events, buildGoalEvent(matchID, awayTeam, awayPlayers, usedMinutes, "goal", 0.72))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "goal", 0.72))
 	}
 	for i := 0; i < score.HomeOwnGoals; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, homePlayers, usedMinutes, "own_goal", 0))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "own_goal", 0))
 	}
 	for i := 0; i < score.AwayOwnGoals; i++ {
-		events = append(events, buildGoalEvent(matchID, awayTeam, awayPlayers, usedMinutes, "own_goal", 0))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "own_goal", 0))
 	}
 
 	events = append(events, generateCards(matchID, homeTeam, homePlayers, usedMinutes)...)
@@ -215,6 +215,7 @@ func eventOrder(t string) int {
 
 func buildGoalEvent(
 	matchID int,
+	homeTeam, awayTeam model.Team,
 	team model.Team,
 	players []model.Player,
 	usedMinutes map[int]bool,
@@ -241,6 +242,13 @@ func buildGoalEvent(
 			e.AssistPlayerID = &assister.ID
 			e.AssistPlayerName = assister.Name
 		}
+	}
+
+	if eventType == "goal" || eventType == "own_goal" {
+		e.GoalReplay = GenerateGoalReplay(
+			eventType, e.Minute, e.PlayerID, e.PlayerName, e.AssistPlayerName,
+			e.TeamID, homeTeam.ID, awayTeam.ID,
+		)
 	}
 	return e
 }

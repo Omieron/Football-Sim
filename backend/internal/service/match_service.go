@@ -92,12 +92,19 @@ func (s *matchService) PlayWeek(leagueID, week int) ([]model.Match, error) {
 			if err := s.eventRepo.CreateBatch(events); err != nil {
 				return nil, err
 			}
+			saved, err := s.eventRepo.GetByMatchID(m.ID)
+			if err != nil {
+				return nil, err
+			}
+			matches[i].Events = saved
 		}
 
 		matches[i].HomeGoals = score.HomeGoals
 		matches[i].AwayGoals = score.AwayGoals
 		matches[i].Played = true
-		matches[i].Events = events
+		if len(events) == 0 {
+			matches[i].Events = events
+		}
 	}
 
 	// Advance league's current week

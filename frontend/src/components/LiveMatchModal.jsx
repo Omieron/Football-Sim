@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import GoalReplay from './GoalReplay'
 
 function eventIcon(type) {
   if (type === 'goal') return '⚽'
@@ -6,6 +7,10 @@ function eventIcon(type) {
   if (type === 'yellow_card') return '🟨'
   if (type === 'red_card') return '🟥'
   return '·'
+}
+
+function isGoalEvent(e) {
+  return e.type === 'goal' || e.type === 'own_goal'
 }
 
 function eventLabel(e, match) {
@@ -29,6 +34,21 @@ function scoresFromEvent(e, match) {
   return { home: 0, away: 0 }
 }
 
+function eventKey(e) {
+  if (e.id != null && e.id > 0) return String(e.id)
+  return `${e.minute}-${e.type}-${e.player_id ?? e.player_name}-${e.team_id}`
+}
+
+function dedupeEvents(list) {
+  const seen = new Set()
+  return list.filter((e) => {
+    const key = eventKey(e)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 function SingleMatch({ match }) {
   const [minute, setMinute] = useState(0)
   const [feed, setFeed] = useState([])
@@ -36,36 +56,80 @@ function SingleMatch({ match }) {
   const [awayGoals, setAwayGoals] = useState(0)
   const [finished, setFinished] = useState(false)
   const [scoreFlash, setScoreFlash] = useState(false)
+  const [replayEvent, setReplayEvent] = useState(null)
+  const [replaying, setReplaying] = useState(false)
+  const goalQueueRef = useRef(null)
+  const timerRef = useRef(null)
+  const processedRef = useRef(new Set())
 
-  const events = match.events || []
+  const events = useMemo(() => dedupeEvents(match.events || []), [match.events])
+  const goalEvents = useMemo(
+    () => events.filter(isGoalEvent).sort((a, b) => a.minute - b.minute || a.type.localeCompare(b.type)),
+    [events],
+  )
+
+  function startMatchReplay() {
+    if (goalEvents.length === 0) return
+    goalQueueRef.current = [...goalEvents]
+    setReplaying(true)
+    setReplayEvent(goalQueueRef.current.shift())
+  }
+
+  function handleReplayDone() {
+    if (goalQueueRef.current?.length > 0) {
+      setReplayEvent(goalQueueRef.current.shift())
+    } else {
+      setReplayEvent(null)
+      setReplaying(false)
+    }
+  }
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMinute(prev => {
-        if (prev >= 90) {
-          clearInterval(interval)
-          setFinished(true)
-          return 90
-        }
-        const next = prev + 1
-        const minuteEvents = events.filter(e => e.minute === next)
-        if (minuteEvents.length > 0) {
-          setFeed(f => [...f, ...minuteEvents])
-          minuteEvents.forEach(e => {
-            const delta = scoresFromEvent(e, match)
-            if (delta.home || delta.away) {
-              if (delta.home) setHomeGoals(g => g + 1)
-              if (delta.away) setAwayGoals(g => g + 1)
-              setScoreFlash(true)
-              setTimeout(() => setScoreFlash(false), 600)
-            }
-          })
-        }
-        return next
-      })
+    processedRef.current = new Set()
+    setMinute(0)
+    setFeed([])
+    setHomeGoals(0)
+    setAwayGoals(0)
+    setFinished(false)
+
+    timerRef.current = setInterval(() => {
+      setMinute((prev) => (prev >= 90 ? prev : prev + 1))
     }, 50)
-    return () => clearInterval(interval)
-  }, [])
+
+    return () => clearInterval(timerRef.current)
+  }, [match.id])
+
+  useEffect(() => {
+    if (minute <= 0 || minute > 90) return
+
+    const minuteEvents = events.filter((e) => e.minute === minute)
+    const fresh = minuteEvents.filter((e) => {
+      const key = eventKey(e)
+      if (processedRef.current.has(key)) return false
+      processedRef.current.add(key)
+      return true
+    })
+
+    if (fresh.length === 0) return
+
+    setFeed((f) => [...f, ...fresh])
+    fresh.forEach((e) => {
+      const delta = scoresFromEvent(e, match)
+      if (delta.home || delta.away) {
+        if (delta.home) setHomeGoals((g) => g + 1)
+        if (delta.away) setAwayGoals((g) => g + 1)
+        setScoreFlash(true)
+        setTimeout(() => setScoreFlash(false), 600)
+      }
+    })
+  }, [minute, events, match])
+
+  useEffect(() => {
+    if (minute >= 90) setFinished(true)
+  }, [minute])
+
+  const displayHome = finished ? match.home_goals : homeGoals
+  const displayAway = finished ? match.away_goals : awayGoals
 
   return (
     <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 28, marginBottom: 28 }}>
@@ -87,7 +151,7 @@ function SingleMatch({ match }) {
           transform: scoreFlash ? 'scale(1.2)' : 'scale(1)',
           transition: 'color 0.2s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1)',
         }}>
-          {homeGoals}<span style={{ color: 'rgba(237,232,220,0.15)', margin: '0 6px' }}>–</span>{awayGoals}
+          {displayHome}<span style={{ color: 'rgba(237,232,220,0.15)', margin: '0 6px' }}>–</span>{displayAway}
         </span>
 
         <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--cream)' }}>
@@ -122,11 +186,35 @@ function SingleMatch({ match }) {
         </div>
       )}
 
+      {finished && goalEvents.length > 0 && (
+        <button
+          type="button"
+          onClick={startMatchReplay}
+          disabled={replaying}
+          className="btn-outline"
+          style={{ width: '100%', marginBottom: replayEvent ? 12 : 14 }}
+        >
+          {replaying ? 'Goller oynatılıyor…' : `▶ Maçı Tekrar Oynat (${goalEvents.length} gol)`}
+        </button>
+      )}
+
+      {replayEvent && (
+        <GoalReplay
+          key={`${replayEvent.minute}-${replayEvent.player_name}-${replayEvent.type}`}
+          event={replayEvent}
+          match={match}
+          onDone={handleReplayDone}
+        />
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 120, overflowY: 'auto' }}>
         {[...feed].reverse().map((e, i) => {
           const { primary, secondary } = eventLabel(e, match)
           return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11 }}>
+            <div
+              key={eventKey(e)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11 }}
+            >
               <span style={{ fontFamily: 'monospace', color: 'var(--acid)', minWidth: 26 }}>{e.minute}'</span>
               <span style={{ fontSize: 12 }}>{eventIcon(e.type)}</span>
               <span style={{ color: 'var(--cream)', fontWeight: 500 }}>{primary}</span>
@@ -148,7 +236,7 @@ export default function LiveMatchModal({ matches, onClose }) {
       padding: 24,
     }}>
       <div style={{
-        width: '100%', maxWidth: 600,
+        width: '100%', maxWidth: 640,
         maxHeight: '90vh', overflowY: 'auto',
         padding: '44px 40px',
         background: 'var(--dark)',

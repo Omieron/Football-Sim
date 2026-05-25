@@ -306,7 +306,7 @@ func (s *Seeder) insertPlayer(teamID int, name, position string) error {
 	_, err := s.db.Exec(`
 		INSERT INTO players (team_id, name, position)
 		VALUES ($1, $2, $3)
-		ON CONFLICT DO NOTHING`,
+		ON CONFLICT (team_id, name) DO NOTHING`,
 		teamID, name, position,
 	)
 	return err

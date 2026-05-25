@@ -31,7 +31,37 @@ type MatchEvent struct {
 	TeamName         string    `json:"team_name,omitempty"`
 	Type             string    `json:"type"` // goal, own_goal, yellow_card, red_card
 	Minute           int       `json:"minute"`
+	GoalReplay       *GoalReplayScene `json:"goal_replay,omitempty"`
 	CreatedAt        time.Time `json:"created_at"`
+}
+
+// GoalReplayScene is persisted at simulation time and replayed by the frontend.
+type GoalReplayScene struct {
+	Template    string               `json:"template"`
+	Label       string               `json:"label"`
+	Duration    int                  `json:"duration"`
+	Caption     string               `json:"caption"`
+	AttackRight bool                 `json:"attack_right"`
+	Actors      []GoalReplayActor    `json:"actors"`
+	Keyframes   []GoalReplayKeyframe `json:"keyframes"`
+}
+
+type GoalReplayActor struct {
+	Key   string `json:"key"`
+	Team  string `json:"team"`
+	Label string `json:"label"`
+	Role  string `json:"role"`
+}
+
+type GoalReplayKeyframe struct {
+	T         float64            `json:"t"`
+	Ball      GoalReplayPoint    `json:"ball"`
+	Positions map[string]GoalReplayPoint `json:"positions"`
+}
+
+type GoalReplayPoint struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type TopScorer struct {

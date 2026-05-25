@@ -42,7 +42,8 @@ CREATE TABLE players (
     team_id     INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     name        VARCHAR(100) NOT NULL,
     position    VARCHAR(10)  NOT NULL CHECK (position IN ('GK', 'DEF', 'MID', 'FWD')),
-    created_at  TIMESTAMP DEFAULT NOW()
+    created_at  TIMESTAMP DEFAULT NOW(),
+    UNIQUE (team_id, name)
 );
 
 -- Simulation league (created by the user)
@@ -87,8 +88,12 @@ CREATE TABLE match_events (
     team_id             INT NOT NULL REFERENCES teams(id),
     type                VARCHAR(20)  NOT NULL CHECK (type IN ('goal', 'own_goal', 'yellow_card', 'red_card')),
     minute              INT NOT NULL CHECK (minute BETWEEN 1 AND 120),
+    goal_replay         JSONB,
     created_at          TIMESTAMP DEFAULT NOW()
 );
+
+-- Migration helper for existing databases
+ALTER TABLE match_events ADD COLUMN IF NOT EXISTS goal_replay JSONB;
 
 -- Standings (separate table — automatically updated by trigger)
 CREATE TABLE standings (
