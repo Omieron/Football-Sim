@@ -254,3 +254,33 @@ func (r *matchEventRepository) GetTopScorers(leagueID int, limit int) ([]model.T
 	}
 	return scorers, nil
 }
+
+func (r *matchEventRepository) GetTopAssists(leagueID int, limit int) ([]model.TopAssist, error) {
+	query := `
+		SELECT me.assist_player_name, t.name, COALESCE(t.crest_url,''), COUNT(*) as assists
+		FROM match_events me
+		JOIN matches m ON m.id = me.match_id
+		JOIN teams   t ON t.id = me.team_id
+		WHERE m.league_id = $1
+		  AND me.type = 'goal'
+		  AND me.assist_player_name <> ''
+		GROUP BY me.assist_player_name, t.name, t.crest_url
+		ORDER BY assists DESC
+		LIMIT $2`
+
+	rows, err := r.db.Query(query, leagueID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var assists []model.TopAssist
+	for rows.Next() {
+		var a model.TopAssist
+		if err := rows.Scan(&a.PlayerName, &a.TeamName, &a.CrestURL, &a.Assists); err != nil {
+			return nil, err
+		}
+		assists = append(assists, a)
+	}
+	return assists, nil
+}

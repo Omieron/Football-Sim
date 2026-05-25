@@ -172,3 +172,7 @@ func (s *matchService) GetMatchEvents(matchID int) ([]model.MatchEvent, error) {
 func (s *matchService) GetTopScorers(leagueID int) ([]model.TopScorer, error) {
 	return s.eventRepo.GetTopScorers(leagueID, 10)
 }
+
+func (s *matchService) GetTopAssists(leagueID int) ([]model.TopAssist, error) {
+	return s.eventRepo.GetTopAssists(leagueID, 10)
+}

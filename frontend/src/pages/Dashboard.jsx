@@ -111,65 +111,146 @@ function MatchBanner({ matches, totalWeeks, viewWeek, setViewWeek, isNextWeekVie
   )
 }
 
-/* ── Top scorers ────────────────────────────────────────── */
-function TopScorers({ scorers, loading }) {
-  const max = scorers[0]?.goals || 1
+/* ── Full leader list (goals / assists) ──────────────────── */
+function LeaderList({ players, statKey, emptyText, accent = 'var(--pink)' }) {
+  if (players.length === 0) {
+    return (
+      <p style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)', lineHeight: 1.6, padding: '8px 0' }}>{emptyText}</p>
+    )
+  }
+
+  const max = players[0]?.[statKey] || 1
 
   return (
-    <div>
-      <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 14 }}>
-        <span className="label">Top Scorers</span>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+      {players.map((p, i) => {
+        const isTop = i === 0
+        const val = p[statKey]
+        const pct = (val / max) * 100
+        return (
+          <div key={`${p.player_name}-${p.team_name}-${i}`}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                {p.crest_url
+                  ? <img src={p.crest_url} alt="" style={{ width: 13, height: 13, objectFit: 'contain', flexShrink: 0 }} />
+                  : <span style={{ width: 13, height: 13, background: 'var(--mid)', display: 'inline-block', flexShrink: 0 }} />
+                }
+                <div style={{ minWidth: 0 }}>
+                  <span style={{
+                    display: 'block',
+                    fontSize: isTop ? 13 : 11, fontWeight: isTop ? 700 : 400,
+                    color: isTop ? 'var(--cream)' : 'rgba(237,232,220,0.5)',
+                    letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{p.player_name}</span>
+                  <span style={{
+                    display: 'block', fontSize: 9, color: 'rgba(237,232,220,0.25)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{p.team_name}</span>
+                </div>
+              </div>
+              <span style={{
+                fontSize: isTop ? 20 : 13, fontWeight: 700, letterSpacing: '-0.04em',
+                color: isTop ? accent : 'rgba(237,232,220,0.3)',
+                lineHeight: 1, flexShrink: 0, marginLeft: 8,
+              }}>{val}</span>
+            </div>
+            <div style={{ height: 1, background: 'var(--border)' }}>
+              <div style={{
+                height: 1, width: `${pct}%`,
+                background: isTop ? accent : 'rgba(237,232,220,0.12)',
+                transition: 'width 1s cubic-bezier(0.16,1,0.3,1)',
+              }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
-      {loading ? (
+/* ── Rotates between goal & assist leaderboards ──────────── */
+function StatsRotator({ scorers, assists, loading }) {
+  const panels = [
+    {
+      key: 'scorers',
+      title: 'Top Scorers',
+      players: scorers,
+      statKey: 'goals',
+      accent: 'var(--pink)',
+      emptyText: 'No goals yet. Play a matchday to see the race.',
+    },
+    {
+      key: 'assists',
+      title: 'Top Assists',
+      players: assists,
+      statKey: 'assists',
+      accent: 'var(--acid)',
+      emptyText: 'No assists yet. Play a matchday to see the race.',
+    },
+  ]
+
+  const [idx, setIdx] = useState(0)
+  const [animKey, setAnimKey] = useState(0)
+  const timerRef = useRef(null)
+  const panel = panels[idx]
+
+  useEffect(() => { setIdx(0); setAnimKey(k => k + 1) }, [scorers, assists])
+
+  useEffect(() => {
+    clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setIdx(i => { const n = (i + 1) % panels.length; setAnimKey(k => k + 1); return n })
+    }, 5000)
+    return () => clearInterval(timerRef.current)
+  }, [scorers, assists])
+
+  if (loading) {
+    return (
+      <div>
+        <div className="label" style={{ marginBottom: 14 }}>Top Scorers</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
           <div className="spin" />
           <span style={{ fontSize: 11, color: 'rgba(237,232,220,0.35)' }}>Loading…</span>
         </div>
-      ) : scorers.length === 0 ? (
-        <p style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)', lineHeight: 1.6, padding: '4px 0' }}>
-          No goals yet. Play a matchday to see the race.
-        </p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-          {scorers.map((s, i) => {
-            const isTop = i === 0
-            const pct = (s.goals / max) * 100
-            return (
-              <div key={`${s.player_name}-${s.team_name}-${i}`}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-                    {s.crest_url
-                      ? <img src={s.crest_url} alt="" style={{ width: 13, height: 13, objectFit: 'contain', flexShrink: 0 }} />
-                      : <span style={{ width: 13, height: 13, background: 'var(--mid)', display: 'inline-block', flexShrink: 0 }} />
-                    }
-                    <div style={{ minWidth: 0 }}>
-                      <span style={{
-                        display: 'block',
-                        fontSize: isTop ? 13 : 11, fontWeight: isTop ? 700 : 400,
-                        color: isTop ? 'var(--cream)' : 'rgba(237,232,220,0.5)',
-                        letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>{s.player_name}</span>
-                      <span style={{
-                        display: 'block', fontSize: 9, color: 'rgba(237,232,220,0.25)',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>{s.team_name}</span>
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: isTop ? 20 : 13, fontWeight: 700, letterSpacing: '-0.04em',
-                    color: isTop ? 'var(--pink)' : 'rgba(237,232,220,0.3)',
-                    lineHeight: 1, flexShrink: 0, marginLeft: 8,
-                  }}>{s.goals}</span>
-                </div>
-                <div style={{ height: 1, background: 'var(--border)' }}>
-                  <div style={{ height: 1, width: `${pct}%`, background: isTop ? 'var(--pink)' : 'rgba(237,232,220,0.12)', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)' }} />
-                </div>
-              </div>
-            )
-          })}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <span className="label">{panel.title}</span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {panels.map((p, i) => (
+            <button
+              key={p.key}
+              onClick={() => { setIdx(i); setAnimKey(k => k + 1) }}
+              style={{
+                height: 3, border: 'none', cursor: 'pointer', padding: 0,
+                width: i === idx ? 18 : 4,
+                background: i === idx ? p.accent : 'rgba(237,232,220,0.2)',
+                transition: 'width 0.25s, background 0.25s',
+              }}
+            />
+          ))}
         </div>
-      )}
+      </div>
+
+      <div key={animKey} style={{ animation: 'bannerIn 0.35s cubic-bezier(0.16,1,0.3,1)' }}>
+        <LeaderList
+          players={panel.players}
+          statKey={panel.statKey}
+          emptyText={panel.emptyText}
+          accent={panel.accent}
+        />
+      </div>
+
+      <div style={{ height: 1, background: 'var(--border)', marginTop: 14 }}>
+        <div
+          key={`p-${animKey}`}
+          style={{ height: 1, background: panel.accent, animation: 'progressFill 5s linear forwards' }}
+        />
+      </div>
     </div>
   )
 }
@@ -182,7 +263,8 @@ export default function Dashboard() {
   const [standings, setStandings] = useState([])
   const [predictions, setPredictions] = useState([])
   const [topScorers, setTopScorers] = useState([])
-  const [scorersLoading, setScorersLoading] = useState(false)
+  const [topAssists, setTopAssists] = useState([])
+  const [statsLoading, setStatsLoading] = useState(false)
   const [weekMatches, setWeekMatches] = useState([])
   const [viewWeek, setViewWeek] = useState(1)
   const [totalWeeks, setTotalWeeks] = useState(0)
@@ -220,11 +302,17 @@ export default function Dashboard() {
       setLeague(lgData)
       setStandings(st.data.data || [])
 
-      setScorersLoading(true)
-      api.get(`/api/leagues/${id}/top-scorers`)
-        .then(r => setTopScorers(r.data.data || []))
-        .catch(() => setTopScorers([]))
-        .finally(() => setScorersLoading(false))
+      setStatsLoading(true)
+      Promise.all([
+        api.get(`/api/leagues/${id}/top-scorers`),
+        api.get(`/api/leagues/${id}/top-assists`),
+      ])
+        .then(([sc, as]) => {
+          setTopScorers(sc.data.data || [])
+          setTopAssists(as.data.data || [])
+        })
+        .catch(() => { setTopScorers([]); setTopAssists([]) })
+        .finally(() => setStatsLoading(false))
 
       if (lgData.current_week >= 4) {
         api.get(`/api/leagues/${id}/predictions`)
@@ -371,7 +459,7 @@ export default function Dashboard() {
               setViewWeek={setViewWeek}
               isNextWeekView={isNextWeekView}
             />
-            <TopScorers scorers={topScorers} loading={scorersLoading} />
+            <StatsRotator scorers={topScorers} assists={topAssists} loading={statsLoading} />
             {predictions.length > 0 && <PredictionWidget predictions={predictions} />}
           </div>
         </div>
