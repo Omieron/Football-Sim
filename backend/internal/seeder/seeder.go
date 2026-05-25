@@ -9,59 +9,64 @@ import (
 	"time"
 )
 
-const baseURL = "https://www.thesportsdb.com/api/v1/json/123"
+const espnBase = "https://site.api.espn.com/apis/site/v2/sports/soccer"
 
-// ─── API Response Types ───────────────────────────────────────────────────────
+// ─── ESPN Response Types ──────────────────────────────────────────────────────
 
-type APITeam struct {
-	IDTeam       string `json:"idTeam"`
-	StrTeam      string `json:"strTeam"`
-	StrTeamShort string `json:"strTeamShort"`
-	StrBadge     string `json:"strBadge"`
+type espnTeamsResponse struct {
+	Sports []struct {
+		Leagues []struct {
+			Teams []struct {
+				Team espnTeam `json:"team"`
+			} `json:"teams"`
+		} `json:"leagues"`
+	} `json:"sports"`
 }
 
-type APITeamsResponse struct {
-	Teams []APITeam `json:"teams"`
+type espnTeam struct {
+	ID           string `json:"id"`
+	DisplayName  string `json:"displayName"`
+	Abbreviation string `json:"abbreviation"`
 }
 
-type APIPlayer struct {
-	IDPlayer    string `json:"idPlayer"`
-	StrPlayer   string `json:"strPlayer"`
-	StrPosition string `json:"strPosition"`
-	IDTeam      string `json:"idTeam"`
+type espnRosterResponse struct {
+	Athletes []espnPlayer `json:"athletes"`
 }
 
-type APIPlayersResponse struct {
-	Player []APIPlayer `json:"player"`
+type espnPlayer struct {
+	FullName string `json:"fullName"`
+	Position struct {
+		Abbreviation string `json:"abbreviation"`
+	} `json:"position"`
 }
 
 // ─── League Config ────────────────────────────────────────────────────────────
 
 type LeagueConfig struct {
 	Name         string
-	APIName      string // name used in TheSportsDB
-	BaseAttack   int    // attack rating of the strongest team
-	BaseDefense  int    // defense rating of the strongest team
-	AttackDecay  int    // attack points lost per rank
-	DefenseDecay int    // defense points lost per rank
+	ESPNCode     string // ESPN league slug
+	BaseAttack   int
+	BaseDefense  int
+	AttackDecay  int
+	DefenseDecay int
 }
 
 var defaultLeagues = []LeagueConfig{
 	{
 		Name:         "English Premier League",
-		APIName:      "English_Premier_League",
+		ESPNCode:     "eng.1",
 		BaseAttack:   88,
 		BaseDefense:  85,
 		AttackDecay:  2,
 		DefenseDecay: 2,
 	},
 	{
-		Name:         "English Championship",
-		APIName:      "English_Championship",
-		BaseAttack:   72,
-		BaseDefense:  70,
-		AttackDecay:  1,
-		DefenseDecay: 1,
+		Name:         "La Liga",
+		ESPNCode:     "esp.1",
+		BaseAttack:   87,
+		BaseDefense:  84,
+		AttackDecay:  2,
+		DefenseDecay: 2,
 	},
 }
 
@@ -90,7 +95,7 @@ func (s *Seeder) Run() (Result, error) {
 	for _, league := range defaultLeagues {
 		log.Printf("Fetching teams for %s...", league.Name)
 
-		teams, err := s.fetchTeams(league.APIName)
+		teams, err := s.fetchTeams(league.ESPNCode)
 		if err != nil {
 			log.Printf("Could not fetch teams for %s: %v", league.Name, err)
 			continue
@@ -98,12 +103,9 @@ func (s *Seeder) Run() (Result, error) {
 
 		log.Printf("Found %d teams", len(teams))
 
-		for i, apiTeam := range teams {
-			// Attack/defense decreases by rank; first team is strongest
+		for i, team := range teams {
 			attack := league.BaseAttack - (i * league.AttackDecay)
 			defense := league.BaseDefense - (i * league.DefenseDecay)
-
-			// Floor at 40
 			if attack < 40 {
 				attack = 40
 			}
@@ -111,50 +113,41 @@ func (s *Seeder) Run() (Result, error) {
 				defense = 40
 			}
 
-			// Append /small to get the thumbnail badge
-			crestURL := apiTeam.StrBadge
-			if crestURL != "" {
-				crestURL += "/small"
-			}
-
-			teamID, err := s.upsertTeam(apiTeam.StrTeam, apiTeam.StrTeamShort, crestURL, attack, defense)
+			teamID, err := s.upsertTeam(team.DisplayName, team.Abbreviation, "", attack, defense)
 			if err != nil {
-				log.Printf("Could not insert team %s: %v", apiTeam.StrTeam, err)
+				log.Printf("Could not insert team %s: %v", team.DisplayName, err)
 				continue
 			}
 
-			log.Printf("%s (ATK:%d DEF:%d)", apiTeam.StrTeam, attack, defense)
+			log.Printf("%s (ATK:%d DEF:%d)", team.DisplayName, attack, defense)
 			result.TotalTeams++
 
-			// Wait 300ms between requests to respect rate limit
-			time.Sleep(300 * time.Millisecond)
-
-			players, err := s.fetchPlayers(apiTeam.IDTeam)
+			players, err := s.fetchRoster(league.ESPNCode, team.ID)
 			if err != nil {
-				log.Printf("Could not fetch players: %v", err)
+				log.Printf("Could not fetch roster for %s: %v", team.DisplayName, err)
 				continue
 			}
 
 			playerCount := 0
 			for _, p := range players {
-				if p.StrPlayer == "" {
+				if p.FullName == "" {
 					continue
 				}
-				pos := normalizePosition(p.StrPosition)
-				if err := s.insertPlayer(teamID, p.StrPlayer, pos); err != nil {
+				pos := normalizePosition(p.Position.Abbreviation)
+				if err := s.insertPlayer(teamID, p.FullName, pos); err != nil {
 					continue
 				}
 				playerCount++
 				result.TotalPlayers++
 			}
 
-			log.Printf("%d players inserted", playerCount)
+			log.Printf("  → %d players inserted", playerCount)
 
-			// Rate limit: ~30 requests per minute → wait 2 seconds
-			time.Sleep(2 * time.Second)
+			// Respect ESPN rate limits
+			time.Sleep(200 * time.Millisecond)
 		}
 
-		log.Printf("%s done\n", league.Name)
+		log.Printf("%s done", league.Name)
 	}
 
 	return result, nil
@@ -162,34 +155,44 @@ func (s *Seeder) Run() (Result, error) {
 
 // ─── HTTP Helpers ─────────────────────────────────────────────────────────────
 
-func (s *Seeder) fetchTeams(leagueName string) ([]APITeam, error) {
-	url := fmt.Sprintf("%s/search_all_teams.php?l=%s", baseURL, leagueName)
+func (s *Seeder) fetchTeams(leagueCode string) ([]espnTeam, error) {
+	url := fmt.Sprintf("%s/%s/teams", espnBase, leagueCode)
 	resp, err := s.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("fetch teams: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var result APITeamsResponse
+	var result espnTeamsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("decode teams: %w", err)
 	}
-	return result.Teams, nil
+
+	if len(result.Sports) == 0 || len(result.Sports[0].Leagues) == 0 {
+		return nil, fmt.Errorf("no leagues in response")
+	}
+
+	raw := result.Sports[0].Leagues[0].Teams
+	teams := make([]espnTeam, 0, len(raw))
+	for _, t := range raw {
+		teams = append(teams, t.Team)
+	}
+	return teams, nil
 }
 
-func (s *Seeder) fetchPlayers(teamID string) ([]APIPlayer, error) {
-	url := fmt.Sprintf("%s/lookup_all_players.php?id=%s", baseURL, teamID)
+func (s *Seeder) fetchRoster(leagueCode, teamID string) ([]espnPlayer, error) {
+	url := fmt.Sprintf("%s/%s/teams/%s/roster", espnBase, leagueCode, teamID)
 	resp, err := s.httpClient.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("fetch players: %w", err)
+		return nil, fmt.Errorf("fetch roster: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var result APIPlayersResponse
+	var result espnRosterResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("decode players: %w", err)
+		return nil, fmt.Errorf("decode roster: %w", err)
 	}
-	return result.Player, nil
+	return result.Athletes, nil
 }
 
 // ─── DB Helpers ───────────────────────────────────────────────────────────────
@@ -222,20 +225,17 @@ func (s *Seeder) insertPlayer(teamID int, name, position string) error {
 
 // ─── Position Normalizer ──────────────────────────────────────────────────────
 
-// normalizePosition maps TheSportsDB position names to our internal codes
 func normalizePosition(pos string) string {
 	switch pos {
-	case "Goalkeeper", "GoalKeeper", "GK":
+	case "G", "GK":
 		return "GK"
-	case "Defender", "Centre-Back", "Left-Back", "Right-Back", "Wingback":
+	case "D", "CB", "LB", "RB", "LWB", "RWB":
 		return "DEF"
-	case "Midfielder", "Central Midfield", "Defensive Midfield",
-		"Attacking Midfield", "Left Midfield", "Right Midfield":
+	case "M", "CM", "DM", "AM", "LM", "RM":
 		return "MID"
-	case "Forward", "Centre-Forward", "Left Winger", "Right Winger",
-		"Second Striker", "Striker", "Attacker":
+	case "F", "CF", "LW", "RW", "ST", "SS":
 		return "FWD"
 	default:
-		return "MID" // unknown position defaults to midfielder
+		return "MID"
 	}
 }
