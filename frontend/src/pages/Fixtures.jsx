@@ -54,6 +54,7 @@ export default function Fixtures() {
   const expectedWeeks = teamCount > 1 ? (teamCount - 1) * 2 : 0
   const matchesPerWeek = teamCount > 1 ? teamCount / 2 : 0
   const scheduleIncomplete = teamCount > 1 && totalWeeks > 0 && totalWeeks < expectedWeeks
+  const weekCap = scheduleIncomplete ? expectedWeeks : totalWeeks
 
   async function regenerateSchedule() {
     if (!selectedId) return
@@ -70,7 +71,6 @@ export default function Fixtures() {
       ])
       const lgData = lg.data.data
       const allMatches = fx.data.data || []
-      const maxWeek = allMatches.reduce((m, x) => Math.max(m, x.week), 0)
       setLeague(lgData)
       setFixtures(allMatches)
       setViewWeek(1)
@@ -88,93 +88,44 @@ export default function Fixtures() {
   const weekMatches = grouped[viewWeek] || []
   const weekPlayed = weekMatches.length > 0 && weekMatches.every(m => m.played)
   const weekUpcoming = league && viewWeek > league.current_week
+  const seasonComplete = league?.status === 'finished'
+  const playedInWeek = weekMatches.filter(m => m.played).length
 
   return (
-    <>
-      {/* Page header */}
-      <div ref={headerRef} className={`reveal ${headerVisible ? 'in' : ''}`} style={{ marginBottom: 40 }}>
-        <div style={{
-          display: 'flex', alignItems: 'flex-end',
-          justifyContent: 'space-between', flexWrap: 'wrap', gap: 24,
-        }}>
-          <div>
-            <div className="label" style={{ marginBottom: 10 }}>Season Schedule</div>
-            <div style={{
-              fontSize: 'clamp(40px,8vw,100px)', fontWeight: 700,
-              letterSpacing: '-0.05em', lineHeight: 0.88, color: 'var(--cream)',
-            }}>
-              Fixtures
-            </div>
+    <div className="fixtures-page">
+      <header ref={headerRef} className={`fixtures-hero reveal ${headerVisible ? 'in' : ''}`}>
+        <div className="fixtures-hero-top">
+          <div className="fixtures-hero-title">
+            <span className="label" style={{ display: 'block', marginBottom: 10 }}>Season Schedule</span>
+            <LeagueSelect
+              leagues={leagues}
+              value={selectedId}
+              onChange={setSelectedId}
+              variant="hero"
+            />
           </div>
-
-          <LeagueSelect
-            leagues={leagues}
-            value={selectedId}
-            onChange={setSelectedId}
-          />
         </div>
-      </div>
 
-      {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '24px 0' }}>
-          <div className="spin" />
-          <span className="label">Loading…</span>
-        </div>
-      )}
-
-      {!loading && scheduleIncomplete && (
-        <div style={{
-          marginBottom: 20,
-          padding: '14px 16px',
-          border: '1px solid var(--pink)',
-          background: 'rgba(255,31,90,0.06)',
-        }}>
-          <p style={{ fontSize: 12, lineHeight: 1.55, color: 'rgba(237,232,220,0.65)', marginBottom: 10 }}>
-            This league has <strong style={{ color: 'var(--cream)' }}>{totalWeeks} matchdays</strong> but
-            {' '}<strong style={{ color: 'var(--cream)' }}>{teamCount} teams</strong> need a full
-            home-and-away season — <strong style={{ color: 'var(--acid)' }}>{expectedWeeks} matchdays</strong>
-            {' '}({matchesPerWeek} matches per week).
-          </p>
-          <button
-            type="button"
-            className="btn-outline"
-            disabled={resetting}
-            onClick={regenerateSchedule}
-            style={{ fontSize: 10, padding: '10px 18px' }}
-          >
-            {resetting ? 'Regenerating…' : 'Regenerate full schedule'}
-          </button>
-        </div>
-      )}
-
-      {!loading && totalWeeks > 0 && (
-        <>
-          <div className="fixtures-week-bar">
-            <div>
-              <div className="label" style={{ marginBottom: 6 }}>
-                Matchday {viewWeek}
-                {weekUpcoming && (
-                  <span style={{ color: 'var(--acid)', marginLeft: 6 }}>upcoming</span>
-                )}
+        {league && selectedId && (
+          <div className="fixtures-hero-meta">
+            <div className="fixtures-hero-progress">
+              <div className="fixtures-hero-progress-row">
+                <span className="label">
+                  Week {Math.min(league.current_week, weekCap || league.current_week)} of {weekCap || '—'}
+                  {seasonComplete ? ' · Season complete' : ' · In progress'}
+                </span>
+                {loading && <div className="spin" />}
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(237,232,220,0.25)', letterSpacing: '0.06em' }}>
-                Week {viewWeek} of {scheduleIncomplete ? expectedWeeks : totalWeeks}
-                {scheduleIncomplete && (
-                  <span style={{ marginLeft: 6, color: 'var(--pink)' }}>
-                    (saved as {totalWeeks})
-                  </span>
-                )}
-                {league && (
-                  <span style={{ marginLeft: 8, color: 'rgba(237,232,220,0.18)' }}>
-                    · {league.current_week} played
-                  </span>
-                )}
-                {weekMatches.length > 0 && (
-                  <span style={{ marginLeft: 8, color: 'rgba(237,232,220,0.18)' }}>
-                    · {weekMatches.length} matches
-                  </span>
-                )}
-              </div>
+              {weekCap > 0 && (
+                <div className="dash-progress-track" aria-hidden="true">
+                  <div
+                    className="dash-progress-fill"
+                    style={{
+                      width: `${Math.min(100, (Math.min(league.current_week, weekCap) / weekCap) * 100)}%`,
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="fixtures-week-nav">
@@ -187,56 +138,93 @@ export default function Fixtures() {
               >
                 ‹
               </button>
+              <span className="fixtures-week-label">MD {viewWeek}</span>
               <button
                 type="button"
                 className="fixtures-week-btn"
-                disabled={viewWeek >= (scheduleIncomplete ? expectedWeeks : totalWeeks)}
+                disabled={viewWeek >= weekCap}
                 onClick={() => setViewWeek(w => w + 1)}
                 aria-label="Next matchday"
               >
                 ›
               </button>
             </div>
-          </div>
 
-          <div>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              paddingBottom: 12, marginBottom: 4,
-              borderBottom: '1px solid var(--border)',
-            }}>
-              {weekPlayed && (
-                <span style={{
-                  fontSize: 8, fontWeight: 700, letterSpacing: '0.12em',
-                  textTransform: 'uppercase', color: 'var(--pink)',
-                  padding: '2px 6px', border: '1px solid var(--pink)',
-                }}>
-                  Played
-                </span>
-              )}
-              {weekMatches.length === 0 && (
-                <span style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)' }}>
-                  No fixtures for this matchday.
-                </span>
-              )}
+            <span className={`dash-status-badge ${seasonComplete ? 'is-complete' : 'is-active'}`}>
+              {seasonComplete ? 'Season Complete' : weekUpcoming ? 'Upcoming' : 'Active'}
+            </span>
+          </div>
+        )}
+      </header>
+
+      {loading && (
+        <div className="fixtures-loading">
+          <div className="spin" />
+          <span className="label">Loading…</span>
+        </div>
+      )}
+
+      {leagues.length === 0 && !loading && (
+        <p className="fixtures-empty">No leagues yet. Create or import one to view fixtures.</p>
+      )}
+
+      {!loading && scheduleIncomplete && (
+        <div className="fixtures-alert">
+          <p>
+            This league has <strong>{totalWeeks} matchdays</strong> but{' '}
+            <strong>{teamCount} teams</strong> need a full home-and-away season —{' '}
+            <strong>{expectedWeeks} matchdays</strong> ({matchesPerWeek} matches per week).
+          </p>
+          <button
+            type="button"
+            className="btn-outline fixtures-alert-btn"
+            disabled={resetting}
+            onClick={regenerateSchedule}
+          >
+            {resetting ? 'Regenerating…' : 'Regenerate full schedule'}
+          </button>
+        </div>
+      )}
+
+      {!loading && totalWeeks > 0 && selectedId && (
+        <article className="fixtures-panel">
+          <div className="fixtures-panel-head">
+            <div>
+              <span className="fixtures-panel-title">Matchday {viewWeek}</span>
+              <span className="fixtures-panel-sub">
+                {weekMatches.length} matches
+                {weekPlayed && ' · All played'}
+                {weekUpcoming && !weekPlayed && ' · Upcoming'}
+                {playedInWeek > 0 && playedInWeek < weekMatches.length && ` · ${playedInWeek} played`}
+              </span>
             </div>
-
-            {weekMatches.map(m => (
-              <MatchCard key={m.id} match={m} onSummary={setSummaryMatch} />
-            ))}
+            {weekPlayed && (
+              <span className="fixtures-badge fixtures-badge-played">Played</span>
+            )}
+            {weekUpcoming && !weekPlayed && (
+              <span className="fixtures-badge fixtures-badge-upcoming">Upcoming</span>
+            )}
           </div>
-        </>
+
+          <div className="fixtures-panel-list scroll-y">
+            {weekMatches.length === 0 ? (
+              <p className="fixtures-empty fixtures-empty-inset">No fixtures for this matchday.</p>
+            ) : (
+              weekMatches.map(m => (
+                <MatchCard key={m.id} match={m} onSummary={setSummaryMatch} />
+              ))
+            )}
+          </div>
+        </article>
       )}
 
       {!loading && totalWeeks === 0 && selectedId && (
-        <p style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)', lineHeight: 1.6, padding: '8px 0' }}>
-          No fixtures yet for this league.
-        </p>
+        <p className="fixtures-empty">No fixtures yet for this league.</p>
       )}
 
       {summaryMatch && (
         <MatchSummaryModal match={summaryMatch} onClose={() => setSummaryMatch(null)} />
       )}
-    </>
+    </div>
   )
 }

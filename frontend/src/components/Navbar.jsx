@@ -1,77 +1,84 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 
-const links = [
-  { to: '/', label: 'Dashboard' },
+const mainLinks = [
+  { to: '/', label: 'Dashboard', end: true },
   { to: '/fixtures', label: 'Fixtures' },
   { to: '/stats', label: 'Stats' },
   { to: '/teams', label: 'Squads' },
+]
+
+const actionLinks = [
   { to: '/leagues/new', label: 'New League' },
   { to: '/import', label: 'Import' },
 ]
 
+function isActive(pathname, to, end) {
+  if (end) return pathname === to
+  return pathname === to || pathname.startsWith(`${to}/`)
+}
+
 export default function Navbar() {
   const { pathname } = useLocation()
-  const [hovered, setHovered] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <nav style={{
-      position: 'sticky', top: 0, zIndex: 100,
-      background: 'rgba(10,10,10,0.92)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid rgba(237,232,220,0.08)',
-    }}>
-      <div style={{
-        padding: '0 12px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: 56,
-      }}>
-        {/* Logo */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <span style={{
-            fontSize: 22, fontWeight: 700, letterSpacing: '-0.04em',
-            color: 'var(--pink)', lineHeight: 1,
-          }}>FS</span>
-          <span style={{
-            fontSize: 10, fontWeight: 500, letterSpacing: '0.2em',
-            textTransform: 'uppercase', color: 'rgba(237,232,220,0.35)',
-          }}>Football Sim</span>
+    <header className="app-nav">
+      <div className="app-nav-inner">
+        <Link to="/" className="app-nav-brand" onClick={() => setMenuOpen(false)}>
+          <span className="app-nav-mark">FS</span>
+          <span className="app-nav-brand-text">
+            <span className="app-nav-brand-name">Football Sim</span>
+            <span className="app-nav-brand-tag">Season Manager</span>
+          </span>
         </Link>
 
-        {/* Nav links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {links.map(({ to, label }) => {
-            const active = pathname === to
-            return (
-              <Link
-                key={to}
-                to={to}
-                onMouseEnter={() => setHovered(to)}
-                onMouseLeave={() => setHovered(null)}
-                style={{
-                  textDecoration: 'none',
-                  padding: '6px 14px',
-                  fontSize: 11,
-                  fontWeight: active ? 700 : 400,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: active ? 'var(--acid)' : hovered === to ? 'var(--cream)' : 'rgba(237,232,220,0.4)',
-                  transition: 'color 0.15s',
-                  position: 'relative',
-                }}
-              >
-                {label}
-                {active && (
-                  <span style={{
-                    position: 'absolute', bottom: -1, left: 14, right: 14,
-                    height: 1, background: 'var(--acid)',
-                  }} />
-                )}
-              </Link>
-            )
-          })}
+        <button
+          type="button"
+          className={`app-nav-toggle${menuOpen ? ' is-open' : ''}`}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(o => !o)}
+        >
+          <span />
+          <span />
+        </button>
+
+        <div className={`app-nav-panel${menuOpen ? ' is-open' : ''}`}>
+          <nav className="app-nav-links" aria-label="Main">
+            {mainLinks.map(({ to, label, end }) => {
+              const active = isActive(pathname, to, end)
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`app-nav-link${active ? ' is-active' : ''}`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="app-nav-actions">
+            {actionLinks.map(({ to, label }) => {
+              const active = isActive(pathname, to, false)
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`app-nav-action${active ? ' is-active' : ''}`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {label}
+                </Link>
+              )
+            })}
+          </div>
         </div>
       </div>
-    </nav>
+      <div className="app-nav-rule" aria-hidden="true" />
+    </header>
   )
 }
