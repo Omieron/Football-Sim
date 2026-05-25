@@ -27,6 +27,24 @@ type espnTeam struct {
 	ID           string `json:"id"`
 	DisplayName  string `json:"displayName"`
 	Abbreviation string `json:"abbreviation"`
+	Logos        []struct {
+		Href string `json:"href"`
+		Rel  []string `json:"rel"`
+	} `json:"logos"`
+}
+
+func (t espnTeam) CrestURL() string {
+	for _, l := range t.Logos {
+		for _, r := range l.Rel {
+			if r == "default" || r == "full" {
+				return l.Href
+			}
+		}
+	}
+	if len(t.Logos) > 0 {
+		return t.Logos[0].Href
+	}
+	return ""
 }
 
 type espnRosterResponse struct {
@@ -43,25 +61,21 @@ type espnPlayer struct {
 // ─── League Config ────────────────────────────────────────────────────────────
 
 type LeagueConfig struct {
-	Name         string
-	ESPNCode     string // ESPN league slug
-	BaseAttack   int
-	BaseDefense  int
-	AttackDecay  int
-	DefenseDecay int
+	Name     string
+	ESPNCode string // ESPN league slug
 }
 
 var AllLeagues = []LeagueConfig{
-	{Name: "English Premier League", ESPNCode: "eng.1", BaseAttack: 88, BaseDefense: 85, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "La Liga",                ESPNCode: "esp.1", BaseAttack: 87, BaseDefense: 84, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "Bundesliga",             ESPNCode: "ger.1", BaseAttack: 86, BaseDefense: 83, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "Serie A",                ESPNCode: "ita.1", BaseAttack: 85, BaseDefense: 82, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "Ligue 1",                ESPNCode: "fra.1", BaseAttack: 84, BaseDefense: 81, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "Süper Lig",              ESPNCode: "tur.1", BaseAttack: 80, BaseDefense: 77, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "Eredivisie",             ESPNCode: "ned.1", BaseAttack: 79, BaseDefense: 76, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "Primeira Liga",          ESPNCode: "por.1", BaseAttack: 78, BaseDefense: 75, AttackDecay: 2, DefenseDecay: 2},
-	{Name: "English Championship",   ESPNCode: "eng.2", BaseAttack: 72, BaseDefense: 70, AttackDecay: 1, DefenseDecay: 1},
-	{Name: "Scottish Premiership",   ESPNCode: "sco.1", BaseAttack: 70, BaseDefense: 68, AttackDecay: 2, DefenseDecay: 2},
+	{Name: "English Premier League", ESPNCode: "eng.1"},
+	{Name: "La Liga",                ESPNCode: "esp.1"},
+	{Name: "Bundesliga",             ESPNCode: "ger.1"},
+	{Name: "Serie A",                ESPNCode: "ita.1"},
+	{Name: "Ligue 1",                ESPNCode: "fra.1"},
+	{Name: "Süper Lig",              ESPNCode: "tur.1"},
+	{Name: "Eredivisie",             ESPNCode: "ned.1"},
+	{Name: "Primeira Liga",          ESPNCode: "por.1"},
+	{Name: "English Championship",   ESPNCode: "eng.2"},
+	{Name: "Scottish Premiership",   ESPNCode: "sco.1"},
 }
 
 // ─── Seeder ───────────────────────────────────────────────────────────────────
@@ -139,17 +153,11 @@ func (s *Seeder) Run(codes []string) (Result, error) {
 
 		log.Printf("Found %d teams", len(teams))
 
-		for i, team := range teams {
-			attack := league.BaseAttack - (i * league.AttackDecay)
-			defense := league.BaseDefense - (i * league.DefenseDecay)
-			if attack < 40 {
-				attack = 40
-			}
-			if defense < 40 {
-				defense = 40
-			}
+		for _, team := range teams {
+			rating := LookupTeamRating(team.DisplayName, league.ESPNCode)
+			attack, defense := rating.Attack, rating.Defense
 
-			teamID, err := s.upsertTeam(team.DisplayName, team.Abbreviation, "", attack, defense, competitionID)
+			teamID, err := s.upsertTeam(team.DisplayName, team.Abbreviation, team.CrestURL(), attack, defense, competitionID)
 			if err != nil {
 				log.Printf("Could not insert team %s: %v", team.DisplayName, err)
 				continue
