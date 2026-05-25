@@ -3,6 +3,7 @@ package handler
 import (
 	"football-sim/internal/seeder"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,9 +19,17 @@ func NewSeedHandler(s *seeder.Seeder) *SeedHandler {
 // GET /api/admin/espn-leagues
 func (h *SeedHandler) GetLeagues(c *gin.Context) {
 	type leagueInfo struct {
-		Code string `json:"code"`
-		Name string `json:"name"`
+		Code     string `json:"code"`
+		Name     string `json:"name"`
+		Imported bool   `json:"imported"`
 	}
+
+	imported, err := h.seeder.ImportedLeagueCodes()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	seen := make(map[string]struct{}, len(seeder.AllLeagues))
 	leagues := make([]leagueInfo, 0, len(seeder.AllLeagues))
 	for _, l := range seeder.AllLeagues {
@@ -28,7 +37,12 @@ func (h *SeedHandler) GetLeagues(c *gin.Context) {
 			continue
 		}
 		seen[l.ESPNCode] = struct{}{}
-		leagues = append(leagues, leagueInfo{Code: l.ESPNCode, Name: l.Name})
+		_, isImported := imported[l.ESPNCode]
+		leagues = append(leagues, leagueInfo{
+			Code:     l.ESPNCode,
+			Name:     l.Name,
+			Imported: isImported,
+		})
 	}
 	c.JSON(http.StatusOK, gin.H{"data": leagues})
 }
@@ -52,6 +66,10 @@ func (h *SeedHandler) Run(c *gin.Context) {
 
 	result, err := h.seeder.Run(body.LeagueCodes)
 	if err != nil {
+		if strings.Contains(err.Error(), "already imported") {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

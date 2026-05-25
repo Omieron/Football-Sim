@@ -117,6 +117,28 @@ func (s *Seeder) ResetAll() error {
 	return nil
 }
 
+// ImportedLeagueCodes returns ESPN codes for competitions that already have teams.
+func (s *Seeder) ImportedLeagueCodes() (map[string]struct{}, error) {
+	rows, err := s.db.Query(`
+		SELECT c.code
+		FROM competitions c
+		WHERE EXISTS (SELECT 1 FROM teams t WHERE t.competition_id = c.id)`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	imported := make(map[string]struct{})
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		imported[code] = struct{}{}
+	}
+	return imported, rows.Err()
+}
+
 func (s *Seeder) Run(codes []string) (Result, error) {
 	var result Result
 
@@ -133,6 +155,16 @@ func (s *Seeder) Run(codes []string) (Result, error) {
 			}
 		}
 		leagues = filtered
+	}
+
+	imported, err := s.ImportedLeagueCodes()
+	if err != nil {
+		return result, fmt.Errorf("checking imported leagues: %w", err)
+	}
+	for _, league := range leagues {
+		if _, ok := imported[league.ESPNCode]; ok {
+			return result, fmt.Errorf("league already imported: %s (%s)", league.Name, league.ESPNCode)
+		}
 	}
 
 	for _, league := range leagues {

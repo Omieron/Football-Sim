@@ -23,21 +23,30 @@ export default function Import() {
   const [resetConfirm, setResetConfirm] = useState('')
   const [headerRef, headerVisible] = useReveal()
 
-  useEffect(() => {
-    api.get('/api/admin/espn-leagues').then(r => {
-      const seen = new Set()
-      const unique = (r.data.data || []).filter(l => {
-        if (seen.has(l.code)) return false
-        seen.add(l.code)
-        return true
-      })
-      setLeagues(unique)
+  async function loadLeagues() {
+    const r = await api.get('/api/admin/espn-leagues')
+    const seen = new Set()
+    const unique = (r.data.data || []).filter(l => {
+      if (seen.has(l.code)) return false
+      seen.add(l.code)
+      return true
     })
-  }, [])
+    setLeagues(unique)
+    setSelected(prev => prev.filter(code => {
+      const league = unique.find(l => l.code === code)
+      return league && !league.imported
+    }))
+  }
+
+  useEffect(() => { loadLeagues() }, [])
 
   function toggle(code) {
+    const league = leagues.find(l => l.code === code)
+    if (league?.imported) return
     setSelected(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code])
   }
+
+  const importable = leagues.filter(l => !l.imported)
 
   async function handleReset() {
     setResetting(true)
@@ -62,6 +71,7 @@ export default function Import() {
     try {
       const r = await api.post('/api/admin/seed', { league_codes: selected })
       setResult(r.data.data)
+      await loadLeagues()
     } catch (e) {
       setError(e.response?.data?.error || 'Import failed.')
     } finally {
@@ -91,11 +101,15 @@ export default function Import() {
           <div className="label">
             Leagues
             <span style={{ color: 'rgba(237,232,220,0.25)', marginLeft: 8 }}>
-              {selected.length}/{leagues.length}
+              {selected.length}/{importable.length}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setSelected(leagues.map(l => l.code))} className="btn-ghost">All</button>
+            <button
+              onClick={() => setSelected(importable.map(l => l.code))}
+              disabled={importable.length === 0}
+              className="btn-ghost"
+            >All</button>
             <button onClick={() => setSelected([])} className="btn-ghost">Clear</button>
           </div>
         </div>
@@ -103,27 +117,34 @@ export default function Import() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
           {leagues.map(l => {
             const isSelected = selected.includes(l.code)
+            const isImported = l.imported
+            const disabled = loading || isImported
             return (
               <button
                 key={l.code}
-                onClick={() => !loading && toggle(l.code)}
+                onClick={() => !disabled && toggle(l.code)}
+                disabled={disabled}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '14px 16px', textAlign: 'left',
-                  background: isSelected ? 'rgba(212,255,0,0.05)' : 'transparent',
-                  border: `1px solid ${isSelected ? 'var(--acid)' : 'var(--border)'}`,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.6 : 1,
+                  background: isImported
+                    ? 'rgba(237,232,220,0.02)'
+                    : isSelected ? 'rgba(212,255,0,0.05)' : 'transparent',
+                  border: `1px solid ${isImported ? 'var(--border)' : isSelected ? 'var(--acid)' : 'var(--border)'}`,
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                  opacity: isImported ? 0.45 : loading ? 0.6 : 1,
                   fontFamily: 'inherit',
                   transition: 'border-color 0.15s, background 0.15s',
                 }}
               >
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{flagMap[l.code] || '🌍'}</span>
+                <span style={{ fontSize: 20, flexShrink: 0, filter: isImported ? 'grayscale(1)' : 'none' }}>
+                  {flagMap[l.code] || '🌍'}
+                </span>
                 <div style={{ flex: 1 }}>
                   <div style={{
                     fontSize: 13, letterSpacing: '-0.01em',
                     fontWeight: isSelected ? 600 : 400,
-                    color: isSelected ? 'var(--acid)' : 'var(--cream)',
+                    color: isImported ? 'rgba(237,232,220,0.35)' : isSelected ? 'var(--acid)' : 'var(--cream)',
                   }}>
                     {l.name}
                   </div>
@@ -131,10 +152,12 @@ export default function Import() {
                     fontSize: 9, fontWeight: 600, letterSpacing: '0.1em',
                     textTransform: 'uppercase', color: 'rgba(237,232,220,0.25)', marginTop: 2,
                   }}>
-                    {l.code}
+                    {isImported ? 'Already imported' : l.code}
                   </div>
                 </div>
-                {isSelected && (
+                {isImported ? (
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(237,232,220,0.3)', flexShrink: 0, letterSpacing: '0.08em' }}>✓ IN</span>
+                ) : isSelected && (
                   <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--acid)', flexShrink: 0 }}>✓</span>
                 )}
               </button>
