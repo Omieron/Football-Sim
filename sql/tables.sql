@@ -15,6 +15,15 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- TABLES
 -- ============================================================
 
+-- Competitions (Premier League, Championship, etc.)
+CREATE TABLE competitions (
+    id          SERIAL PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,           -- "Premier League"
+    code        VARCHAR(20)  NOT NULL UNIQUE,    -- "PL", "ELC" (API code)
+    country     VARCHAR(100) NOT NULL DEFAULT 'England',
+    created_at  TIMESTAMP DEFAULT NOW()
+);
+
 -- Teams
 CREATE TABLE teams (
     id             SERIAL PRIMARY KEY,
@@ -33,15 +42,6 @@ CREATE TABLE players (
     team_id     INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     name        VARCHAR(100) NOT NULL,
     position    VARCHAR(10)  NOT NULL CHECK (position IN ('GK', 'DEF', 'MID', 'FWD')),
-    created_at  TIMESTAMP DEFAULT NOW()
-);
-
--- Competitions (Premier League, Championship, etc.)
-CREATE TABLE competitions (
-    id          SERIAL PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL,           -- "Premier League"
-    code        VARCHAR(20)  NOT NULL UNIQUE,    -- "PL", "ELC" (API code)
-    country     VARCHAR(100) NOT NULL DEFAULT 'England',
     created_at  TIMESTAMP DEFAULT NOW()
 );
 
@@ -351,13 +351,3 @@ GROUP BY me.player_id, p.name, t.name, m.league_id
 ORDER BY total_cards DESC;
 
 
--- ============================================================
--- SEED DATA (competitions — for fetching teams from API)
--- ============================================================
-
-INSERT INTO competitions (name, code, country) VALUES
-    ('Premier League', 'PL',  'England'),
-    ('Championship',   'ELC', 'England'),
-    ('La Liga',        'PD',  'Spain'),
-    ('Bundesliga',     'BL1', 'Germany'),
-    ('Serie A',        'SA',  'Italy');
