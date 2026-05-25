@@ -174,16 +174,16 @@ func GenerateMatchEvents(
 	usedMinutes := map[int]bool{}
 
 	for i := 0; i < score.HomeRegular; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "goal", 0.72))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "goal"))
 	}
 	for i := 0; i < score.AwayRegular; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "goal", 0.72))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "goal"))
 	}
 	for i := 0; i < score.HomeOwnGoals; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "own_goal", 0))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "own_goal"))
 	}
 	for i := 0; i < score.AwayOwnGoals; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "own_goal", 0))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "own_goal"))
 	}
 
 	events = append(events, generateCards(matchID, homeTeam, homePlayers, usedMinutes)...)
@@ -220,7 +220,6 @@ func buildGoalEvent(
 	players []model.Player,
 	usedMinutes map[int]bool,
 	eventType string,
-	assistChance float64,
 ) model.MatchEvent {
 	minute := randomMinute(usedMinutes)
 	scorer := randomScorer(players)
@@ -237,17 +236,22 @@ func buildGoalEvent(
 		e.PlayerName = scorer.Name
 	}
 
-	if eventType == "goal" && rand.Float64() < assistChance {
-		if assister := randomAssister(players, scorer); assister != nil {
-			e.AssistPlayerID = &assister.ID
-			e.AssistPlayerName = assister.Name
+	method := "own_goal"
+	if eventType == "goal" {
+		rng := rand.New(rand.NewSource(replaySeed(minute, e.PlayerID, team.ID)))
+		method = PickGoalMethod(rng, eventType, "")
+		if GoalMethodUsesAssist(method) {
+			if assister := randomAssister(players, scorer); assister != nil {
+				e.AssistPlayerID = &assister.ID
+				e.AssistPlayerName = assister.Name
+			}
 		}
 	}
 
 	if eventType == "goal" || eventType == "own_goal" {
 		e.GoalReplay = GenerateGoalReplay(
 			eventType, e.Minute, e.PlayerID, e.PlayerName, e.AssistPlayerName,
-			e.TeamID, homeTeam.ID, awayTeam.ID,
+			e.TeamID, homeTeam.ID, awayTeam.ID, method,
 		)
 	}
 	return e
