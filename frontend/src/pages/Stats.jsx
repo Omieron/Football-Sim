@@ -4,165 +4,94 @@ import api from '../api/axios'
 import LeagueSelect from '../components/LeagueSelect'
 import { useReveal } from '../hooks/useReveal'
 
-const LIST_INITIAL = 10
-const LIST_STEP = 10
+const PANELS = [
+  { key: 'goals', label: 'Goals', statKey: 'goals', accent: 'var(--pink)' },
+  { key: 'assists', label: 'Assists', statKey: 'assists', accent: 'var(--acid)' },
+  { key: 'cards', label: 'Discipline', statKey: 'total_cards', accent: '#ff9f43' },
+]
 
-function StatListPanel({ rows, emptyText, children }) {
-  const [limit, setLimit] = useState(LIST_INITIAL)
-
-  useEffect(() => { setLimit(LIST_INITIAL) }, [rows])
-
-  if (rows.length === 0) {
-    return <p style={{ fontSize: 12, color: 'rgba(237,232,220,0.3)' }}>{emptyText}</p>
-  }
-
-  const visible = rows.slice(0, limit)
-  const canExpand = limit < rows.length
-  const canCollapse = limit > LIST_INITIAL
-
+function StatRow({ rank, player, accent, value, isDiscipline }) {
+  const isTop = rank === 1
   return (
-    <div>
-      <div className="stat-list-scroll scroll-y">
-        {children(visible)}
-      </div>
-      {rows.length > LIST_INITIAL && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)',
-        }}>
-          <span style={{ fontSize: 10, color: 'rgba(237,232,220,0.3)', letterSpacing: '0.06em' }}>
-            {visible.length} / {rows.length}
-          </span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {canCollapse && (
-              <button type="button" className="stat-list-btn" onClick={() => setLimit(LIST_INITIAL)}>
-                Less
-              </button>
-            )}
-            {canExpand && (
-              <button type="button" className="stat-list-btn" onClick={() => setLimit(l => Math.min(l + LIST_STEP, rows.length))}>
-                More
-              </button>
-            )}
-          </div>
+    <div className={`stats-row${isTop ? ' stats-row-top' : ''}${isDiscipline ? ' stats-row-cards' : ''}`}>
+      <span className="stats-row-rank">{rank}</span>
+      <div className="stats-row-player">
+        {player.crest_url
+          ? <img src={player.crest_url} alt="" className="stats-row-crest" />
+          : <span className="stats-row-crest stats-row-crest-fallback" />
+        }
+        <div className="stats-row-names">
+          <span className="stats-row-name">{player.player_name}</span>
+          <span className="stats-row-team">{player.team_name}</span>
         </div>
+      </div>
+      {isDiscipline ? (
+        <>
+          <span className="stats-row-yel">{player.yellow_cards}</span>
+          <span className="stats-row-red">{player.red_cards}</span>
+          <span className="stats-row-val" style={{ color: isTop ? accent : undefined }}>{value}</span>
+        </>
+      ) : (
+        <span className="stats-row-val" style={{ color: isTop ? accent : undefined }}>{value}</span>
       )}
     </div>
   )
 }
 
-function StatSection({ title, accent, children }) {
-  return (
-    <section style={{ marginBottom: 48 }}>
-      <div className="label" style={{ marginBottom: 16, color: accent }}>{title}</div>
-      {children}
-    </section>
-  )
-}
+function StatCard({ panel, rows, loading }) {
+  const isDiscipline = panel.key === 'cards'
+  const statKey = panel.key === 'cards' ? 'total_cards' : panel.statKey
 
-function GoalAssistTable({ rows, allRows, statKey, accent }) {
-  const max = (allRows?.[0] ?? rows[0])?.[statKey] || 1
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {rows.map((p, i) => {
-        const val = p[statKey]
-        const pct = (val / max) * 100
-        const isTop = i === 0
-        return (
-          <div key={`${p.player_name}-${p.team_name}-${i}`}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                <span style={{ fontSize: 10, color: 'rgba(237,232,220,0.25)', width: 16, flexShrink: 0 }}>{i + 1}</span>
-                {p.crest_url
-                  ? <img src={p.crest_url} alt="" style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }} />
-                  : <span style={{ width: 16, height: 16, background: 'var(--mid)', display: 'inline-block', flexShrink: 0 }} />
-                }
-                <div style={{ minWidth: 0 }}>
-                  <span style={{
-                    display: 'block', fontSize: isTop ? 14 : 12, fontWeight: isTop ? 700 : 400,
-                    color: isTop ? 'var(--cream)' : 'rgba(237,232,220,0.55)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>{p.player_name}</span>
-                  <span style={{
-                    display: 'block', fontSize: 10, color: 'rgba(237,232,220,0.25)',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>{p.team_name}</span>
-                </div>
-              </div>
-              <span style={{
-                fontSize: isTop ? 22 : 14, fontWeight: 700, color: isTop ? accent : 'rgba(237,232,220,0.35)',
-                flexShrink: 0, marginLeft: 12,
-              }}>{val}</span>
-            </div>
-            <div style={{ height: 1, background: 'var(--border)' }}>
-              <div style={{ height: 1, width: `${pct}%`, background: isTop ? accent : 'rgba(237,232,220,0.1)' }} />
-            </div>
+    <article className="stats-card">
+      <div className="stats-card-head" style={{ borderLeftColor: panel.accent }}>
+        <span className="stats-card-title">{panel.label}</span>
+        {rows.length > 0 && (
+          <span className="stats-card-count">{rows.length} players</span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="stats-card-loading">
+          <div className="spin" />
+          <span className="label">Loading…</span>
+        </div>
+      ) : rows.length === 0 ? (
+        <p className="stats-card-empty">
+          {panel.key === 'goals' && 'No goals recorded yet. Play matchdays or recalculate stats.'}
+          {panel.key === 'assists' && 'No assists recorded yet.'}
+          {panel.key === 'cards' && 'No cards recorded yet.'}
+        </p>
+      ) : (
+        <div className="stats-card-scroll scroll-y">
+          <div className={`stats-table-head${isDiscipline ? ' stats-table-head-cards' : ''}`}>
+            <span>#</span>
+            <span>Player</span>
+            {isDiscipline ? (
+              <>
+                <span>YC</span>
+                <span>RC</span>
+                <span>Tot</span>
+              </>
+            ) : (
+              <span>{panel.label}</span>
+            )}
           </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function DisciplineTable({ rows, allRows }) {
-  const max = (allRows?.[0] ?? rows[0])?.total_cards || 1
-  return (
-    <div>
-      <div className="stat-list-header" style={{
-        display: 'grid', gridTemplateColumns: '1fr 48px 48px 56px',
-        gap: 8, paddingBottom: 8, marginBottom: 8,
-        borderBottom: '1px solid var(--border)',
-        fontSize: 9, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
-        color: 'rgba(237,232,220,0.25)',
-      }}>
-        <span>Player</span>
-        <span style={{ textAlign: 'center' }}>🟨</span>
-        <span style={{ textAlign: 'center' }}>🟥</span>
-        <span style={{ textAlign: 'right' }}>Total</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {rows.map((p, i) => {
-          const pct = (p.total_cards / max) * 100
-          const isTop = i === 0
-          return (
-            <div key={`${p.player_name}-${p.team_name}-${i}`}>
-              <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 48px 48px 56px',
-                gap: 8, alignItems: 'center', marginBottom: 5,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                  <span style={{ fontSize: 10, color: 'rgba(237,232,220,0.25)', width: 16, flexShrink: 0 }}>{i + 1}</span>
-                  {p.crest_url
-                    ? <img src={p.crest_url} alt="" style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0 }} />
-                    : <span style={{ width: 16, height: 16, background: 'var(--mid)', display: 'inline-block', flexShrink: 0 }} />
-                  }
-                  <div style={{ minWidth: 0 }}>
-                    <span style={{
-                      display: 'block', fontSize: isTop ? 14 : 12, fontWeight: isTop ? 700 : 400,
-                      color: isTop ? 'var(--cream)' : 'rgba(237,232,220,0.55)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>{p.player_name}</span>
-                    <span style={{
-                      display: 'block', fontSize: 10, color: 'rgba(237,232,220,0.25)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>{p.team_name}</span>
-                  </div>
-                </div>
-                <span style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#f5c518' }}>{p.yellow_cards}</span>
-                <span style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--pink)' }}>{p.red_cards}</span>
-                <span style={{
-                  textAlign: 'right', fontSize: isTop ? 18 : 13, fontWeight: 700,
-                  color: isTop ? '#ff9f43' : 'rgba(237,232,220,0.35)',
-                }}>{p.total_cards}</span>
-              </div>
-              <div style={{ height: 1, background: 'var(--border)' }}>
-                <div style={{ height: 1, width: `${pct}%`, background: isTop ? '#ff9f43' : 'rgba(237,232,220,0.1)' }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+          <div className="stats-table-body">
+            {rows.map((p, i) => (
+              <StatRow
+                key={`${p.player_name}-${p.team_name}-${i}`}
+                rank={i + 1}
+                player={p}
+                accent={panel.accent}
+                value={p[statKey]}
+                isDiscipline={isDiscipline}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -170,6 +99,7 @@ export default function Stats() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [leagues, setLeagues] = useState([])
   const [selectedId, setSelectedId] = useState(null)
+  const [league, setLeague] = useState(null)
   const [scorers, setScorers] = useState([])
   const [assists, setAssists] = useState([])
   const [mostCards, setMostCards] = useState([])
@@ -180,11 +110,13 @@ export default function Stats() {
   const fetchStats = (id) => {
     setLoading(true)
     return Promise.allSettled([
+      api.get(`/api/leagues/${id}`),
       api.get(`/api/leagues/${id}/top-scorers`),
       api.get(`/api/leagues/${id}/top-assists`),
       api.get(`/api/leagues/${id}/most-cards`),
     ])
-      .then(([sc, as, mc]) => {
+      .then(([lg, sc, as, mc]) => {
+        if (lg.status === 'fulfilled') setLeague(lg.value.data.data)
         setScorers(sc.status === 'fulfilled' ? (sc.value.data.data || []) : [])
         setAssists(as.status === 'fulfilled' ? (as.value.data.data || []) : [])
         setMostCards(mc.status === 'fulfilled' ? (mc.value.data.data || []) : [])
@@ -221,102 +153,96 @@ export default function Stats() {
     fetchStats(selectedId)
   }, [selectedId])
 
-  const leagueName = leagues.find(l => l.id === selectedId)?.name
+  const dataByKey = { goals: scorers, assists, cards: mostCards }
+  const seasonComplete = league?.status === 'finished'
+  const topScorer = scorers[0]
+  const topAssist = assists[0]
+  const topCards = mostCards[0]
 
   return (
-    <>
-      <style>{`
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; align-items: start; }
-        @media (max-width: 1100px) { .stats-grid { grid-template-columns: 1fr; gap: 40px; } }
-        .stat-list-scroll {
-          max-height: min(380px, 50vh);
-        }
-        .stat-list-btn {
-          background: transparent;
-          border: 1px solid var(--border);
-          color: rgba(237,232,220,0.45);
-          font-family: inherit;
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          padding: 4px 10px;
-          cursor: pointer;
-          transition: color 0.15s, border-color 0.15s;
-        }
-        .stat-list-btn:hover {
-          color: var(--cream);
-          border-color: rgba(237,232,220,0.25);
-        }
-      `}</style>
-
-      <div ref={headerRef} className={`reveal ${headerVisible ? 'in' : ''}`} style={{ marginBottom: 56 }}>
-        <div className="label" style={{ marginBottom: 10 }}>Season Records</div>
-        <div style={{
-          fontSize: 'clamp(40px,8vw,100px)', fontWeight: 700,
-          letterSpacing: '-0.05em', lineHeight: 0.88, color: 'var(--cream)',
-        }}>
-          Stats
-        </div>
-        {leagues.length > 0 && (
-          <div style={{ marginTop: 24 }}>
+    <div className="stats-page">
+      <header ref={headerRef} className={`stats-hero reveal ${headerVisible ? 'in' : ''}`}>
+        <div className="stats-hero-top">
+          <div className="stats-hero-title">
+            <span className="label" style={{ display: 'block', marginBottom: 10 }}>Player Statistics</span>
             <LeagueSelect
               leagues={leagues}
               value={selectedId}
               onChange={setSelectedId}
+              variant="hero"
             />
-            {loading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-                <div className="spin" />
-                <span className="label">Loading…</span>
-              </div>
-            )}
-            {selectedId && !loading && (
-              <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-                <button
-                  type="button"
-                  className="stat-list-btn"
-                  disabled={recalculating}
-                  onClick={recalculateStats}
-                >
-                  {recalculating ? 'Recalculating…' : 'Recalculate player stats'}
-                </button>
-                {scorers.length === 0 && (
-                  <span style={{ fontSize: 11, color: 'rgba(237,232,220,0.35)', lineHeight: 1.5 }}>
-                    Teams have goals but no scorers? Recalculate to assign them to real squad players.
-                  </span>
-                )}
-              </div>
-            )}
+          </div>
+        </div>
+
+        {selectedId && (
+          <div className="stats-hero-meta">
+            <div className="stats-hero-meta-left">
+              {league && (
+                <span className="label">
+                  Week {league.current_week}
+                  {seasonComplete ? ' · Season complete' : ' · In progress'}
+                </span>
+              )}
+              {!loading && scorers.length === 0 && (
+                <span className="stats-hint">
+                  Goals missing from players? Recalculate to map them to real squads.
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              className="stats-btn stats-btn-accent"
+              disabled={recalculating || loading}
+              onClick={recalculateStats}
+            >
+              {recalculating ? 'Recalculating…' : 'Recalculate stats'}
+            </button>
           </div>
         )}
-      </div>
+      </header>
 
       {leagues.length === 0 && !loading && (
-        <p style={{ fontSize: 13, color: 'rgba(237,232,220,0.35)' }}>
-          No leagues yet. Import or create one to track stats.
-        </p>
+        <p className="stats-page-empty">No leagues yet. Import or create one to track stats.</p>
       )}
 
-      {selectedId && !loading && (
-        <div className="stats-grid">
-          <StatSection title={`${leagueName} · Goals`} accent="var(--pink)">
-            <StatListPanel rows={scorers} emptyText="No goals recorded yet.">
-              {visible => <GoalAssistTable rows={visible} allRows={scorers} statKey="goals" accent="var(--pink)" />}
-            </StatListPanel>
-          </StatSection>
-          <StatSection title={`${leagueName} · Assists`} accent="var(--acid)">
-            <StatListPanel rows={assists} emptyText="No assists recorded yet.">
-              {visible => <GoalAssistTable rows={visible} allRows={assists} statKey="assists" accent="var(--acid)" />}
-            </StatListPanel>
-          </StatSection>
-          <StatSection title={`${leagueName} · Discipline`} accent="#ff9f43">
-            <StatListPanel rows={mostCards} emptyText="No cards recorded yet.">
-              {visible => <DisciplineTable rows={visible} allRows={mostCards} />}
-            </StatListPanel>
-          </StatSection>
+      {selectedId && !loading && (topScorer || topAssist || topCards) && (
+        <div className="stats-spotlight">
+          {topScorer && (
+            <div className="stats-spotlight-item" style={{ '--spot-accent': 'var(--pink)' }}>
+              <span className="label">Top Scorer</span>
+              <strong>{topScorer.player_name}</strong>
+              <span>{topScorer.goals} goals · {topScorer.team_name}</span>
+            </div>
+          )}
+          {topAssist && (
+            <div className="stats-spotlight-item" style={{ '--spot-accent': 'var(--acid)' }}>
+              <span className="label">Top Assists</span>
+              <strong>{topAssist.player_name}</strong>
+              <span>{topAssist.assists} assists · {topAssist.team_name}</span>
+            </div>
+          )}
+          {topCards && (
+            <div className="stats-spotlight-item" style={{ '--spot-accent': '#ff9f43' }}>
+              <span className="label">Most Cards</span>
+              <strong>{topCards.player_name}</strong>
+              <span>{topCards.total_cards} cards · {topCards.team_name}</span>
+            </div>
+          )}
         </div>
       )}
-    </>
+
+      {selectedId && (
+        <div className="stats-grid">
+          {PANELS.map(panel => (
+            <StatCard
+              key={panel.key}
+              panel={panel}
+              rows={dataByKey[panel.key]}
+              loading={loading}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
