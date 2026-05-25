@@ -4,7 +4,7 @@ function eventIcon(type) {
   if (type === 'goal') return '⚽'
   if (type === 'yellow_card') return '🟨'
   if (type === 'red_card') return '🟥'
-  return '•'
+  return '·'
 }
 
 function SingleMatch({ match }) {
@@ -45,49 +45,67 @@ function SingleMatch({ match }) {
   }, [])
 
   return (
-    <div className="rounded-lg p-4 flex flex-col gap-3" style={{ backgroundColor: '#0d0d18', border: '1px solid #2d2d4e' }}>
-      {/* Teams & Score */}
-      <div className="flex items-center justify-between">
-        <span className="font-semibold text-slate-200 text-sm">{match.home_team_name}</span>
-        <span
-          className="text-xl font-bold px-3 py-1 rounded transition-transform duration-150"
-          style={{
-            color: '#2ec4b6',
-            transform: scoreFlash ? 'scale(1.4)' : 'scale(1)',
-            backgroundColor: scoreFlash ? '#1a3a38' : 'transparent',
-          }}
-        >
-          {homeGoals} – {awayGoals}
+    <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 28, marginBottom: 28 }}>
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center', gap: 16, marginBottom: 16,
+      }}>
+        <span style={{
+          fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em',
+          color: 'var(--cream)', textAlign: 'right',
+        }}>
+          {match.home_team_name}
         </span>
-        <span className="font-semibold text-slate-200 text-sm">{match.away_team_name}</span>
+
+        <span style={{
+          fontSize: 40, fontWeight: 700, letterSpacing: '-0.06em', lineHeight: 1,
+          display: 'block', textAlign: 'center',
+          color: scoreFlash ? 'var(--acid)' : 'var(--cream)',
+          transform: scoreFlash ? 'scale(1.2)' : 'scale(1)',
+          transition: 'color 0.2s, transform 0.15s cubic-bezier(0.34,1.56,0.64,1)',
+        }}>
+          {homeGoals}<span style={{ color: 'rgba(237,232,220,0.15)', margin: '0 6px' }}>–</span>{awayGoals}
+        </span>
+
+        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--cream)' }}>
+          {match.away_team_name}
+        </span>
       </div>
 
-      {/* Minute bar */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-1 rounded-full" style={{ backgroundColor: '#2d2d4e' }}>
-          <div
-            className="h-1 rounded-full transition-all"
-            style={{ width: `${(minute / 90) * 100}%`, backgroundColor: '#2ec4b6' }}
-          />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }}>
+          <div style={{
+            height: 1,
+            background: finished ? 'var(--pink)' : 'var(--acid)',
+            width: `${(minute / 90) * 100}%`,
+            transition: 'width 0.05s linear, background 0.3s',
+          }} />
         </div>
-        <span className="text-xs font-mono" style={{ color: '#64748b' }}>{minute}'</span>
+        <span style={{
+          fontSize: 10, fontWeight: 700, fontFamily: 'monospace',
+          color: finished ? 'var(--pink)' : 'var(--acid)',
+          minWidth: 28, textAlign: 'right',
+        }}>
+          {minute}'
+        </span>
       </div>
 
-      {/* Finished */}
       {finished && (
-        <div className="text-center text-sm font-semibold" style={{ color: '#2ec4b6' }}>
-          Full Time!
+        <div style={{
+          fontSize: 9, fontWeight: 700, letterSpacing: '0.2em',
+          textTransform: 'uppercase', color: 'var(--pink)', marginBottom: 10,
+        }}>
+          Full Time
         </div>
       )}
 
-      {/* Event feed */}
-      <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 100, overflowY: 'auto' }}>
         {[...feed].reverse().map((e, i) => (
-          <div key={i} className="text-xs flex items-center gap-2" style={{ color: '#94a3b8' }}>
-            <span>{eventIcon(e.type)}</span>
-            <span className="font-mono" style={{ color: '#64748b' }}>{e.minute}'</span>
-            <span>{e.player_name}</span>
-            <span style={{ color: '#475569' }}>— {e.team_name}</span>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11 }}>
+            <span style={{ fontFamily: 'monospace', color: 'var(--acid)', minWidth: 26 }}>{e.minute}'</span>
+            <span style={{ fontSize: 12 }}>{eventIcon(e.type)}</span>
+            <span style={{ color: 'var(--cream)', fontWeight: 500 }}>{e.player_name}</span>
+            <span style={{ color: 'rgba(237,232,220,0.3)' }}>— {e.team_name}</span>
           </div>
         ))}
       </div>
@@ -96,35 +114,53 @@ function SingleMatch({ match }) {
 }
 
 export default function LiveMatchModal({ matches, onClose }) {
-  const allFinished = matches.every(() => true)
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
-      <div className="w-full max-w-2xl max-h-screen overflow-y-auto rounded-xl p-6 flex flex-col gap-4" style={{ backgroundColor: '#1a1a2e', border: '1px solid #2d2d4e' }}>
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-lg" style={{ color: '#2ec4b6' }}>Live Matches</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 text-xl leading-none"
-          >
-            ×
-          </button>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(10,10,10,0.97)', backdropFilter: 'blur(24px)',
+      padding: 24,
+    }}>
+      <div style={{
+        width: '100%', maxWidth: 600,
+        maxHeight: '90vh', overflowY: 'auto',
+        padding: '44px 40px',
+        background: 'var(--dark)',
+        border: '1px solid var(--border)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40 }}>
+          <div>
+            <div className="label" style={{ marginBottom: 6 }}>Live Simulation</div>
+            <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, color: 'var(--cream)' }}>
+              In Progress
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%',
+              background: 'var(--pink)', boxShadow: '0 0 8px var(--pink)',
+              animation: 'livePulse 1.4s ease-in-out infinite',
+            }} />
+            <span style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: '0.15em',
+              textTransform: 'uppercase', color: 'var(--pink)',
+            }}>Live</span>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {matches.map(m => (
-            <SingleMatch key={m.id} match={m} />
-          ))}
-        </div>
+        {matches.map(m => <SingleMatch key={m.id} match={m} />)}
 
-        <button
-          onClick={onClose}
-          className="mt-2 py-2 rounded-lg font-semibold text-sm transition-colors"
-          style={{ backgroundColor: '#2ec4b6', color: '#0a0a0f' }}
-        >
-          Close & Refresh Standings
+        <button onClick={onClose} className="btn-acid" style={{ width: '100%' }}>
+          Close & Refresh
         </button>
       </div>
+
+      <style>{`
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.35; transform: scale(0.75); }
+        }
+      `}</style>
     </div>
   )
 }

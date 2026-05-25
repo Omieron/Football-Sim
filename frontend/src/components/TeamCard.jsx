@@ -1,43 +1,72 @@
-export default function TeamCard({ team, onClick }) {
+import { useState } from 'react'
+
+export default function TeamCard({ team, onClick, selected }) {
+  const [hovered, setHovered] = useState(false)
+
   return (
     <div
       onClick={() => onClick?.(team)}
-      className="rounded-lg p-4 cursor-pointer transition-colors flex flex-col gap-3"
-      style={{ backgroundColor: '#1a1a2e', border: '1px solid #2d2d4e' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '20px',
+        border: selected
+          ? '1px solid var(--acid)'
+          : hovered
+          ? '1px solid rgba(237,232,220,0.25)'
+          : '1px solid var(--border)',
+        cursor: onClick ? 'pointer' : 'default',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'border-color 0.2s, transform 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+        transform: hovered ? 'scale(1.02) rotate(0.3deg)' : 'scale(1)',
+        background: selected ? 'rgba(212,255,0,0.04)' : 'transparent',
+      }}
     >
-      <div className="flex items-center gap-3">
-        {team.crest_url ? (
-          <img src={team.crest_url} alt="" className="w-10 h-10 object-contain" />
-        ) : (
-          <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg" style={{ backgroundColor: '#2d2d4e', color: '#2ec4b6' }}>
-            {team.name?.[0]}
-          </div>
-        )}
+      {/* Big background initial */}
+      <span style={{
+        position: 'absolute', right: -8, top: -16,
+        fontSize: 96, fontWeight: 700, lineHeight: 1,
+        color: 'rgba(237,232,220,0.03)',
+        letterSpacing: '-0.05em',
+        userSelect: 'none', pointerEvents: 'none',
+      }}>{team.name?.[0]}</span>
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
+        {team.crest_url
+          ? <img src={team.crest_url} alt="" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
+          : <div style={{
+              width: 32, height: 32, background: 'var(--mid)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, fontWeight: 700, color: 'rgba(237,232,220,0.3)', flexShrink: 0,
+            }}>{team.name?.[0]}</div>
+        }
         <div>
-          <div className="font-semibold text-slate-200">{team.name}</div>
-          <div className="text-xs" style={{ color: '#64748b' }}>{team.short_name}</div>
+          <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{team.name}</div>
+          {team.short_name && (
+            <div className="label" style={{ marginTop: 3 }}>{team.short_name}</div>
+          )}
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <div>
-          <div className="flex justify-between text-xs mb-1">
-            <span style={{ color: '#64748b' }}>Attack</span>
-            <span style={{ color: '#f59e0b' }}>{team.attack}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {[
+          { label: 'ATK', value: team.attack, color: 'var(--pink)' },
+          { label: 'DEF', value: team.defense, color: 'var(--acid)' },
+        ].map(({ label, value, color }) => (
+          <div key={label}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span className="label">{label}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color }}>{value}</span>
+            </div>
+            <div style={{ height: 1, background: 'var(--border)' }}>
+              <div style={{
+                height: 1, background: color, width: `${value}%`,
+                transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)',
+              }} />
+            </div>
           </div>
-          <div className="h-1.5 rounded-full" style={{ backgroundColor: '#2d2d4e' }}>
-            <div className="h-1.5 rounded-full" style={{ width: `${team.attack}%`, backgroundColor: '#f59e0b' }} />
-          </div>
-        </div>
-        <div>
-          <div className="flex justify-between text-xs mb-1">
-            <span style={{ color: '#64748b' }}>Defense</span>
-            <span style={{ color: '#3b82f6' }}>{team.defense}</span>
-          </div>
-          <div className="h-1.5 rounded-full" style={{ backgroundColor: '#2d2d4e' }}>
-            <div className="h-1.5 rounded-full" style={{ width: `${team.defense}%`, backgroundColor: '#3b82f6' }} />
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   )
