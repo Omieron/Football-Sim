@@ -70,10 +70,10 @@ func (s *matchService) PlayWeek(leagueID, week int) ([]model.Match, error) {
 		}
 
 		// Simulate the match
-		hg, ag := SimulateMatch(*homeTeam, *awayTeam)
+		score := SimulateMatchDetailed(*homeTeam, *awayTeam)
 
 		// Update the score
-		if err := s.matchRepo.UpdateScore(m.ID, hg, ag); err != nil {
+		if err := s.matchRepo.UpdateScore(m.ID, score.HomeGoals, score.AwayGoals); err != nil {
 			return nil, err
 		}
 
@@ -87,15 +87,15 @@ func (s *matchService) PlayWeek(leagueID, week int) ([]model.Match, error) {
 		awayPlayers, _ := s.playerRepo.GetByTeamID(m.AwayTeamID)
 
 		// Generate events
-		events := GenerateMatchEvents(m.ID, *homeTeam, *awayTeam, homePlayers, awayPlayers, hg, ag)
+		events := GenerateMatchEvents(m.ID, *homeTeam, *awayTeam, homePlayers, awayPlayers, score)
 		if len(events) > 0 {
 			if err := s.eventRepo.CreateBatch(events); err != nil {
 				return nil, err
 			}
 		}
 
-		matches[i].HomeGoals = hg
-		matches[i].AwayGoals = ag
+		matches[i].HomeGoals = score.HomeGoals
+		matches[i].AwayGoals = score.AwayGoals
 		matches[i].Played = true
 		matches[i].Events = events
 	}
@@ -149,7 +149,12 @@ func (s *matchService) UpdateMatchScore(id int, req model.UpdateMatchRequest) (*
 	homePlayers, _ := s.playerRepo.GetByTeamID(match.HomeTeamID)
 	awayPlayers, _ := s.playerRepo.GetByTeamID(match.AwayTeamID)
 
-	events := GenerateMatchEvents(id, *homeTeam, *awayTeam, homePlayers, awayPlayers, req.HomeGoals, req.AwayGoals)
+	events := GenerateMatchEvents(id, *homeTeam, *awayTeam, homePlayers, awayPlayers, SimulatedScore{
+		HomeGoals:   req.HomeGoals,
+		AwayGoals:   req.AwayGoals,
+		HomeRegular: req.HomeGoals,
+		AwayRegular: req.AwayGoals,
+	})
 	if len(events) > 0 {
 		s.eventRepo.CreateBatch(events)
 	}

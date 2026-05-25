@@ -2,9 +2,31 @@ import { useState, useEffect } from 'react'
 
 function eventIcon(type) {
   if (type === 'goal') return '⚽'
+  if (type === 'own_goal') return '😬'
   if (type === 'yellow_card') return '🟨'
   if (type === 'red_card') return '🟥'
   return '·'
+}
+
+function eventLabel(e, match) {
+  if (e.type === 'own_goal') {
+    const benefited = e.team_id === match.home_team_id ? match.away_team_name : match.home_team_name
+    return { primary: `${e.player_name} (OG)`, secondary: benefited }
+  }
+  if (e.type === 'goal' && e.assist_player_name) {
+    return { primary: e.player_name, secondary: `assist: ${e.assist_player_name}` }
+  }
+  return { primary: e.player_name, secondary: e.team_name }
+}
+
+function scoresFromEvent(e, match) {
+  if (e.type === 'goal') {
+    return e.team_id === match.home_team_id ? { home: 1, away: 0 } : { home: 0, away: 1 }
+  }
+  if (e.type === 'own_goal') {
+    return e.team_id === match.home_team_id ? { home: 0, away: 1 } : { home: 1, away: 0 }
+  }
+  return { home: 0, away: 0 }
 }
 
 function SingleMatch({ match }) {
@@ -30,9 +52,10 @@ function SingleMatch({ match }) {
         if (minuteEvents.length > 0) {
           setFeed(f => [...f, ...minuteEvents])
           minuteEvents.forEach(e => {
-            if (e.type === 'goal') {
-              if (e.team_id === match.home_team_id) setHomeGoals(g => g + 1)
-              else setAwayGoals(g => g + 1)
+            const delta = scoresFromEvent(e, match)
+            if (delta.home || delta.away) {
+              if (delta.home) setHomeGoals(g => g + 1)
+              if (delta.away) setAwayGoals(g => g + 1)
               setScoreFlash(true)
               setTimeout(() => setScoreFlash(false), 600)
             }
@@ -99,15 +122,18 @@ function SingleMatch({ match }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 100, overflowY: 'auto' }}>
-        {[...feed].reverse().map((e, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11 }}>
-            <span style={{ fontFamily: 'monospace', color: 'var(--acid)', minWidth: 26 }}>{e.minute}'</span>
-            <span style={{ fontSize: 12 }}>{eventIcon(e.type)}</span>
-            <span style={{ color: 'var(--cream)', fontWeight: 500 }}>{e.player_name}</span>
-            <span style={{ color: 'rgba(237,232,220,0.3)' }}>— {e.team_name}</span>
-          </div>
-        ))}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 120, overflowY: 'auto' }}>
+        {[...feed].reverse().map((e, i) => {
+          const { primary, secondary } = eventLabel(e, match)
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11 }}>
+              <span style={{ fontFamily: 'monospace', color: 'var(--acid)', minWidth: 26 }}>{e.minute}'</span>
+              <span style={{ fontSize: 12 }}>{eventIcon(e.type)}</span>
+              <span style={{ color: 'var(--cream)', fontWeight: 500 }}>{primary}</span>
+              <span style={{ color: 'rgba(237,232,220,0.3)' }}>— {secondary}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

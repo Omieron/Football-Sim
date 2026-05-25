@@ -168,10 +168,12 @@ func NewMatchEventRepository(db *sql.DB) model.MatchEventRepository {
 func (r *matchEventRepository) GetByMatchID(matchID int) ([]model.MatchEvent, error) {
 	query := `
 		SELECT me.id, me.match_id, me.player_id, COALESCE(p.name,''), COALESCE(p.position,''),
+		       me.assist_player_id, COALESCE(me.assist_player_name, COALESCE(ap.name, '')),
 		       me.team_id, t.name, me.type, me.minute, me.created_at
 		FROM match_events me
 		JOIN teams t ON t.id = me.team_id
 		LEFT JOIN players p ON p.id = me.player_id
+		LEFT JOIN players ap ON ap.id = me.assist_player_id
 		WHERE me.match_id = $1
 		ORDER BY me.minute ASC`
 
@@ -186,6 +188,7 @@ func (r *matchEventRepository) GetByMatchID(matchID int) ([]model.MatchEvent, er
 		var e model.MatchEvent
 		if err := rows.Scan(
 			&e.ID, &e.MatchID, &e.PlayerID, &e.PlayerName, &e.Position,
+			&e.AssistPlayerID, &e.AssistPlayerName,
 			&e.TeamID, &e.TeamName, &e.Type, &e.Minute, &e.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -203,15 +206,15 @@ func (r *matchEventRepository) CreateBatch(events []model.MatchEvent) error {
 	defer tx.Rollback()
 
 	stmt, err := tx.Prepare(`
-		INSERT INTO match_events (match_id, player_id, team_id, type, minute)
-		VALUES ($1, $2, $3, $4, $5)`)
+		INSERT INTO match_events (match_id, player_id, assist_player_id, assist_player_name, team_id, type, minute)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	for _, e := range events {
-		if _, err := stmt.Exec(e.MatchID, e.PlayerID, e.TeamID, e.Type, e.Minute); err != nil {
+		if _, err := stmt.Exec(e.MatchID, e.PlayerID, e.AssistPlayerID, e.AssistPlayerName, e.TeamID, e.Type, e.Minute); err != nil {
 			return err
 		}
 	}
@@ -230,7 +233,7 @@ func (r *matchEventRepository) GetTopScorers(leagueID int, limit int) ([]model.T
 		JOIN matches m  ON m.id  = me.match_id
 		JOIN teams   t  ON t.id  = me.team_id
 		JOIN players p  ON p.id  = me.player_id
-		WHERE m.league_id = $1 AND me.type = 'goal'
+		WHERE m.league_id = $1 AND me.type = 'goal' AND me.player_id IS NOT NULL
 		GROUP BY p.name, t.name, t.crest_url
 		ORDER BY goals DESC
 		LIMIT $2`

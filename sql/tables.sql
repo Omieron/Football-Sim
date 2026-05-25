@@ -77,15 +77,17 @@ CREATE TABLE matches (
     CHECK (home_team_id <> away_team_id)
 );
 
--- Match events (goal, yellow card, red card)
+-- Match events (goal, own goal, cards)
 CREATE TABLE match_events (
-    id          SERIAL PRIMARY KEY,
-    match_id    INT NOT NULL REFERENCES matches(id)  ON DELETE CASCADE,
-    player_id   INT          REFERENCES players(id)  ON DELETE SET NULL,
-    team_id     INT NOT NULL REFERENCES teams(id),
-    type        VARCHAR(20)  NOT NULL CHECK (type IN ('goal', 'yellow_card', 'red_card')),
-    minute      INT NOT NULL CHECK (minute BETWEEN 1 AND 120),
-    created_at  TIMESTAMP DEFAULT NOW()
+    id                  SERIAL PRIMARY KEY,
+    match_id            INT NOT NULL REFERENCES matches(id)  ON DELETE CASCADE,
+    player_id           INT          REFERENCES players(id)  ON DELETE SET NULL,
+    assist_player_id    INT          REFERENCES players(id)  ON DELETE SET NULL,
+    assist_player_name  VARCHAR(100),
+    team_id             INT NOT NULL REFERENCES teams(id),
+    type                VARCHAR(20)  NOT NULL CHECK (type IN ('goal', 'own_goal', 'yellow_card', 'red_card')),
+    minute              INT NOT NULL CHECK (minute BETWEEN 1 AND 120),
+    created_at          TIMESTAMP DEFAULT NOW()
 );
 
 -- Standings (separate table — automatically updated by trigger)

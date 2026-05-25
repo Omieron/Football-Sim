@@ -20,16 +20,18 @@ type Match struct {
 }
 
 type MatchEvent struct {
-	ID         int       `json:"id"`
-	MatchID    int       `json:"match_id"`
-	PlayerID   *int      `json:"player_id,omitempty"`
-	PlayerName string    `json:"player_name,omitempty"`
-	Position   string    `json:"position,omitempty"`
-	TeamID     int       `json:"team_id"`
-	TeamName   string    `json:"team_name,omitempty"`
-	Type       string    `json:"type"` // goal, yellow_card, red_card
-	Minute     int       `json:"minute"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID               int       `json:"id"`
+	MatchID          int       `json:"match_id"`
+	PlayerID         *int      `json:"player_id,omitempty"`
+	PlayerName       string    `json:"player_name,omitempty"`
+	AssistPlayerID   *int      `json:"assist_player_id,omitempty"`
+	AssistPlayerName string    `json:"assist_player_name,omitempty"`
+	Position         string    `json:"position,omitempty"`
+	TeamID           int       `json:"team_id"`
+	TeamName         string    `json:"team_name,omitempty"`
+	Type             string    `json:"type"` // goal, own_goal, yellow_card, red_card
+	Minute           int       `json:"minute"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type TopScorer struct {
