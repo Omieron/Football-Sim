@@ -4,7 +4,6 @@ import api from '../api/axios'
 import StandingsTable from '../components/StandingsTable'
 import PredictionWidget from '../components/PredictionWidget'
 import LiveMatchModal from '../components/LiveMatchModal'
-import { useReveal } from '../hooks/useReveal'
 
 /* ── Match banner carousel ──────────────────────────────── */
 function MatchBanner({ matches, totalWeeks, viewWeek, setViewWeek, isNextWeekView }) {
@@ -113,56 +112,64 @@ function MatchBanner({ matches, totalWeeks, viewWeek, setViewWeek, isNextWeekVie
 }
 
 /* ── Top scorers ────────────────────────────────────────── */
-function TopScorers({ leagueId }) {
-  const [scorers, setScorers] = useState([])
-  const [ref, visible] = useReveal()
-
-  useEffect(() => {
-    if (!leagueId) return
-    api.get(`/api/leagues/${leagueId}/top-scorers`)
-      .then(r => setScorers(r.data.data || []))
-      .catch(() => setScorers([]))
-  }, [leagueId])
-
-  if (scorers.length === 0) return null
+function TopScorers({ scorers, loading }) {
   const max = scorers[0]?.goals || 1
 
   return (
-    <div ref={ref} className={`reveal ${visible ? 'in' : ''}`}>
+    <div>
       <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 14 }}>
         <span className="label">Top Scorers</span>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-        {scorers.map((s, i) => {
-          const isTop = i === 0
-          const pct = (s.goals / max) * 100
-          return (
-            <div key={`${s.player_name}-${i}`}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-                  {s.crest_url
-                    ? <img src={s.crest_url} alt="" style={{ width: 13, height: 13, objectFit: 'contain', flexShrink: 0 }} />
-                    : <span style={{ width: 13, height: 13, background: 'var(--mid)', display: 'inline-block', flexShrink: 0 }} />
-                  }
+
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
+          <div className="spin" />
+          <span style={{ fontSize: 11, color: 'rgba(237,232,220,0.35)' }}>Loading…</span>
+        </div>
+      ) : scorers.length === 0 ? (
+        <p style={{ fontSize: 11, color: 'rgba(237,232,220,0.3)', lineHeight: 1.6, padding: '4px 0' }}>
+          No goals yet. Play a matchday to see the race.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+          {scorers.map((s, i) => {
+            const isTop = i === 0
+            const pct = (s.goals / max) * 100
+            return (
+              <div key={`${s.player_name}-${s.team_name}-${i}`}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+                    {s.crest_url
+                      ? <img src={s.crest_url} alt="" style={{ width: 13, height: 13, objectFit: 'contain', flexShrink: 0 }} />
+                      : <span style={{ width: 13, height: 13, background: 'var(--mid)', display: 'inline-block', flexShrink: 0 }} />
+                    }
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{
+                        display: 'block',
+                        fontSize: isTop ? 13 : 11, fontWeight: isTop ? 700 : 400,
+                        color: isTop ? 'var(--cream)' : 'rgba(237,232,220,0.5)',
+                        letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{s.player_name}</span>
+                      <span style={{
+                        display: 'block', fontSize: 9, color: 'rgba(237,232,220,0.25)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>{s.team_name}</span>
+                    </div>
+                  </div>
                   <span style={{
-                    fontSize: isTop ? 13 : 11, fontWeight: isTop ? 700 : 400,
-                    color: isTop ? 'var(--cream)' : 'rgba(237,232,220,0.5)',
-                    letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>{s.player_name}</span>
+                    fontSize: isTop ? 20 : 13, fontWeight: 700, letterSpacing: '-0.04em',
+                    color: isTop ? 'var(--pink)' : 'rgba(237,232,220,0.3)',
+                    lineHeight: 1, flexShrink: 0, marginLeft: 8,
+                  }}>{s.goals}</span>
                 </div>
-                <span style={{
-                  fontSize: isTop ? 20 : 13, fontWeight: 700, letterSpacing: '-0.04em',
-                  color: isTop ? 'var(--pink)' : 'rgba(237,232,220,0.3)',
-                  lineHeight: 1, flexShrink: 0, marginLeft: 8,
-                }}>{s.goals}</span>
+                <div style={{ height: 1, background: 'var(--border)' }}>
+                  <div style={{ height: 1, width: `${pct}%`, background: isTop ? 'var(--pink)' : 'rgba(237,232,220,0.12)', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)' }} />
+                </div>
               </div>
-              <div style={{ height: 1, background: 'var(--border)' }}>
-                <div style={{ height: 1, width: `${pct}%`, background: isTop ? 'var(--pink)' : 'rgba(237,232,220,0.12)', transition: 'width 1s cubic-bezier(0.16,1,0.3,1)' }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -174,6 +181,8 @@ export default function Dashboard() {
   const [league, setLeague] = useState(null)
   const [standings, setStandings] = useState([])
   const [predictions, setPredictions] = useState([])
+  const [topScorers, setTopScorers] = useState([])
+  const [scorersLoading, setScorersLoading] = useState(false)
   const [weekMatches, setWeekMatches] = useState([])
   const [viewWeek, setViewWeek] = useState(1)
   const [totalWeeks, setTotalWeeks] = useState(0)
@@ -210,6 +219,12 @@ export default function Dashboard() {
       setTotalWeeks(maxWeek)
       setLeague(lgData)
       setStandings(st.data.data || [])
+
+      setScorersLoading(true)
+      api.get(`/api/leagues/${id}/top-scorers`)
+        .then(r => setTopScorers(r.data.data || []))
+        .catch(() => setTopScorers([]))
+        .finally(() => setScorersLoading(false))
 
       if (lgData.current_week >= 4) {
         api.get(`/api/leagues/${id}/predictions`)
@@ -265,9 +280,10 @@ export default function Dashboard() {
   return (
     <>
       <style>{`
-        .dash-grid  { display: grid; grid-template-columns: 1fr 300px; }
-        .dash-left  { padding-right: 40px; border-right: 1px solid var(--border); }
-        .dash-right { padding-left: 40px; display: flex; flex-direction: column; gap: 32px; }
+        .dash-wrap  { max-width: 1280px; margin: 0 auto; width: 100%; }
+        .dash-grid  { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+        .dash-left  { padding-right: 40px; border-right: 1px solid var(--border); min-width: 0; }
+        .dash-right { padding-left: 40px; display: flex; flex-direction: column; gap: 32px; min-width: 0; }
         @media (max-width: 900px) {
           .dash-grid  { grid-template-columns: 1fr; }
           .dash-left  { padding-right: 0; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 32px; margin-bottom: 32px; }
@@ -284,7 +300,7 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Top bar: league name + controls ── */}
-      <div style={{
+      <div className="dash-wrap" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: 16,
         paddingTop: 24, paddingBottom: 20,
@@ -339,7 +355,7 @@ export default function Dashboard() {
 
       {/* ── Main grid ── */}
       {league && (
-        <div className="dash-grid">
+        <div className="dash-wrap dash-grid">
           {/* Left: Standings */}
           <div className="dash-left">
             <div className="label" style={{ marginBottom: 14 }}>Standings</div>
@@ -355,7 +371,7 @@ export default function Dashboard() {
               setViewWeek={setViewWeek}
               isNextWeekView={isNextWeekView}
             />
-            <TopScorers leagueId={selectedId} />
+            <TopScorers scorers={topScorers} loading={scorersLoading} />
             {predictions.length > 0 && <PredictionWidget predictions={predictions} />}
           </div>
         </div>
