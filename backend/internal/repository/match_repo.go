@@ -263,10 +263,12 @@ func (r *matchEventRepository) GetTopScorers(leagueID int, limit int) ([]model.T
 		FROM match_events me
 		JOIN matches m  ON m.id  = me.match_id
 		JOIN teams   t  ON t.id  = me.team_id
-		JOIN players p  ON p.id  = me.player_id
-		WHERE m.league_id = $1 AND me.type = 'goal' AND me.player_id IS NOT NULL
+		JOIN players p  ON p.id  = me.player_id AND p.team_id = me.team_id
+		WHERE m.league_id = $1
+		  AND me.type = 'goal'
+		  AND me.player_id IS NOT NULL
 		GROUP BY p.id, p.name, t.name, t.crest_url
-		ORDER BY goals DESC
+		ORDER BY goals DESC, p.name ASC
 		LIMIT $2`
 
 	rows, err := r.db.Query(query, leagueID, limit)

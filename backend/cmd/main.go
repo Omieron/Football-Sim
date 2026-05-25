@@ -84,7 +84,8 @@ func main() {
 
 			leagues.GET("/:id/weeks/:week",        matchHandler.GetWeek)
 			leagues.POST("/:id/weeks/:week/play",  matchHandler.PlayWeek)
-			leagues.POST("/:id/play-all",          matchHandler.PlayAll)
+			leagues.POST("/:id/play-all",              matchHandler.PlayAll)
+			leagues.POST("/:id/regenerate-events",     matchHandler.RegenerateEvents)
 		}
 
 		// Matches

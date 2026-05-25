@@ -376,6 +376,9 @@ export default function Dashboard() {
   const [totalWeeks, setTotalWeeks] = useState(0)
   const [liveMatches, setLiveMatches] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [playingAll, setPlayingAll] = useState(false)
+  const [playAllError, setPlayAllError] = useState(null)
+  const [playAllProgress, setPlayAllProgress] = useState(null)
 
   useEffect(() => {
     api.get('/api/leagues').then(r => {
@@ -390,6 +393,27 @@ export default function Dashboard() {
       const r = await api.get(`/api/leagues/${leagueId}/weeks/${week}`)
       setWeekMatches(r.data.data || [])
     } catch { setWeekMatches([]) }
+  }, [])
+
+  const fetchStats = useCallback(async (id) => {
+    if (!id) return
+    setStatsLoading(true)
+    try {
+      const [sc, as, mc] = await Promise.all([
+        api.get(`/api/leagues/${id}/top-scorers`),
+        api.get(`/api/leagues/${id}/top-assists`),
+        api.get(`/api/leagues/${id}/most-cards`),
+      ])
+      setTopScorers(sc.data.data || [])
+      setTopAssists(as.data.data || [])
+      setMostCards(mc.data.data || [])
+    } catch {
+      setTopScorers([])
+      setTopAssists([])
+      setMostCards([])
+    } finally {
+      setStatsLoading(false)
+    }
   }, [])
 
   const fetchLeagueData = useCallback(async (id, jumpToWeek) => {
@@ -408,18 +432,7 @@ export default function Dashboard() {
       setLeague(lgData)
       setStandings(st.data.data || [])
 
-      setStatsLoading(true)
-      Promise.allSettled([
-        api.get(`/api/leagues/${id}/top-scorers`),
-        api.get(`/api/leagues/${id}/top-assists`),
-        api.get(`/api/leagues/${id}/most-cards`),
-      ])
-        .then(([sc, as, mc]) => {
-          setTopScorers(sc.status === 'fulfilled' ? (sc.value.data.data || []) : [])
-          setTopAssists(as.status === 'fulfilled' ? (as.value.data.data || []) : [])
-          setMostCards(mc.status === 'fulfilled' ? (mc.value.data.data || []) : [])
-        })
-        .finally(() => setStatsLoading(false))
+      await fetchStats(id)
 
       if (lgData.current_week >= 4) {
         api.get(`/api/leagues/${id}/predictions`)
@@ -433,7 +446,7 @@ export default function Dashboard() {
       setViewWeek(target)
       fetchWeekMatches(id, target)
     } finally { setLoading(false) }
-  }, [fetchWeekMatches])
+  }, [fetchWeekMatches, fetchStats])
 
   useEffect(() => { fetchLeagueData(selectedId) }, [selectedId, fetchLeagueData])
   useEffect(() => {
@@ -446,9 +459,34 @@ export default function Dashboard() {
     setLiveMatches(r.data.data || [])
   }
   async function handlePlayAll() {
-    if (!league) return
-    await api.post(`/api/leagues/${selectedId}/play-all`)
-    fetchLeagueData(selectedId)
+    if (!league || playingAll) return
+    setPlayingAll(true)
+    setPlayAllError(null)
+    setPlayAllProgress(null)
+    try {
+      const fxRes = await api.get(`/api/leagues/${selectedId}/fixtures`)
+      const matches = fxRes.data.data || []
+      const weeks = [...new Set(
+        matches.filter(m => !m.played).map(m => m.week)
+      )].sort((a, b) => a - b)
+
+      for (let i = 0; i < weeks.length; i++) {
+        const week = weeks[i]
+        setPlayAllProgress(`Simulating matchday ${week} (${i + 1}/${weeks.length})…`)
+        await api.post(`/api/leagues/${selectedId}/weeks/${week}/play`, null, { timeout: 180000 })
+      }
+
+      setPlayAllProgress('Finalizing season…')
+      await api.post(`/api/leagues/${selectedId}/play-all`, null, { timeout: 60000 })
+
+      await fetchLeagueData(selectedId)
+    } catch (err) {
+      setPlayAllError(err.response?.data?.error || 'Season simulation failed. Partial results may be saved.')
+      await fetchLeagueData(selectedId)
+    } finally {
+      setPlayingAll(false)
+      setPlayAllProgress(null)
+    }
   }
   function handleModalClose() {
     setLiveMatches(null)
@@ -530,52 +568,68 @@ export default function Dashboard() {
 
       {/* ── Top bar: league name + controls ── */}
       <div className="dash-viewport">
-      <div className="dash-wrap dash-header" style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 16,
-        paddingTop: 24, paddingBottom: 20,
-        borderBottom: '1px solid var(--border)', marginBottom: 28,
-      }}>
-        {/* Left: name + meta */}
-        <div>
-          <LeagueSelect
-            leagues={leagues}
-            value={selectedId}
-            onChange={setSelectedId}
-            variant="hero"
-          />
-          {league && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="label">Week {league.current_week} of {totalWeeks}</span>
-              <span style={{
-                fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                padding: '2px 7px',
-                background: allPlayed ? 'var(--pink)' : 'transparent',
-                color: allPlayed ? 'var(--black)' : 'var(--acid)',
-                border: allPlayed ? 'none' : '1px solid var(--acid)',
-              }}>
-                {allPlayed ? 'Season Complete' : 'Active'}
-              </span>
-              {loading && <div className="spin" />}
+      <div className="dash-wrap dash-header dash-hero">
+        <div className="dash-hero-top">
+          <div className="dash-hero-title">
+            <LeagueSelect
+              leagues={leagues}
+              value={selectedId}
+              onChange={setSelectedId}
+              variant="hero"
+            />
+          </div>
+
+          {league && !allPlayed && (
+            <div className="dash-actions">
+              <div className="dash-actions-row">
+                <button onClick={handlePlayWeek} className="btn-acid" disabled={playingAll}>
+                  ▶ Play Week {nextWeek}
+                </button>
+                <button onClick={handlePlayAll} className="btn-outline" disabled={playingAll}>
+                  {playingAll ? 'Simulating…' : '▶▶ Play All'}
+                </button>
+              </div>
+              {playAllProgress && (
+                <span style={{ fontSize: 10, color: 'rgba(237,232,220,0.4)', letterSpacing: '0.04em' }}>
+                  {playAllProgress}
+                </span>
+              )}
+              {playAllError && (
+                <span style={{ fontSize: 10, color: 'var(--pink)', maxWidth: 320, textAlign: 'right', lineHeight: 1.4 }}>
+                  {playAllError}
+                </span>
+              )}
             </div>
           )}
         </div>
 
-        {/* Right: action buttons */}
-        {league && !allPlayed && (
-          <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-            <button onClick={handlePlayWeek} className="btn-acid">
-              ▶ Play Week {nextWeek}
-            </button>
-            <button onClick={handlePlayAll} className="btn-outline">
-              ▶▶ Play All
-            </button>
+        {league && (
+          <div className="dash-hero-meta">
+            <div className="dash-hero-progress">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="label">Week {Math.min(league.current_week, totalWeeks || league.current_week)} of {totalWeeks || '—'}</span>
+                {loading && <div className="spin" />}
+              </div>
+              {totalWeeks > 0 && (
+                <div className="dash-progress-track" aria-hidden="true">
+                  <div
+                    className="dash-progress-fill"
+                    style={{ width: `${Math.min(100, (Math.min(league.current_week, totalWeeks) / totalWeeks) * 100)}%` }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {allPlayed && standings[0] && (
+              <span className="dash-champion" title={standings[0].team_name}>
+                🏆 <strong>{standings[0].team_name}</strong>
+              </span>
+            )}
+
+            <span className={`dash-status-badge ${allPlayed ? 'is-complete' : 'is-active'}`}>
+              {allPlayed ? 'Season Complete' : 'Active'}
+            </span>
           </div>
-        )}
-        {allPlayed && (
-          <span style={{ fontSize: 11, color: 'var(--acid)', fontWeight: 600, letterSpacing: '0.05em' }}>
-            🏆 Season finished
-          </span>
         )}
       </div>
 

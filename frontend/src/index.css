@@ -233,36 +233,147 @@ body::after {
 .league-select-hero {
   appearance: none;
   -webkit-appearance: none;
+  display: block;
+  width: 100%;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--border);
   color: var(--cream);
   font-family: inherit;
-  font-size: 22px;
+  font-size: clamp(26px, 4vw, 38px);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  padding: 0 28px 4px 0;
-  margin-bottom: 6;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  padding: 0 28px 0 0;
+  margin: 0;
   outline: none;
   cursor: pointer;
-  min-width: 180px;
-  max-width: 100%;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ede8dc' fill-opacity='0.45' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 2px bottom 10px;
-  transition: border-color 0.15s, color 0.15s;
+  background-position: right 0 top 50%;
+  transition: color 0.15s;
 }
 
 .league-select-hero:hover,
 .league-select-hero:focus {
-  border-bottom-color: var(--acid);
-  color: var(--cream);
+  color: var(--acid);
 }
 
 .league-select-hero option {
   background: var(--dark);
   font-size: 14px;
   font-weight: 400;
+}
+
+.league-select-hero-static {
+  cursor: default;
+  padding-right: 0;
+  background-image: none;
+}
+
+/* ── Dashboard hero header ───────────────────────────── */
+.dash-hero {
+  padding-top: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+
+.dash-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dash-hero-title {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--acid);
+}
+
+.dash-hero-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.dash-hero-progress {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-progress-track {
+  height: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.dash-progress-fill {
+  height: 100%;
+  background: var(--acid);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dash-status-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dash-status-badge.is-active {
+  color: var(--acid);
+  border: 1px solid rgba(212, 255, 0, 0.35);
+  background: rgba(212, 255, 0, 0.06);
+}
+
+.dash-status-badge.is-complete {
+  color: var(--black);
+  background: var(--pink);
+  border: none;
+}
+
+.dash-champion {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(237, 232, 220, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.dash-champion strong {
+  color: var(--cream);
+  font-weight: 700;
+}
+
+.dash-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dash-actions-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 /* ── Modal overlay ───────────────────────────────────── */

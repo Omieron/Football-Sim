@@ -83,9 +83,15 @@ func (s *matchService) PlayWeek(leagueID, week int) ([]model.Match, error) {
 			return nil, err
 		}
 
-		// Fetch players
-		homePlayers, _ := s.playerRepo.GetByTeamID(m.HomeTeamID)
-		awayPlayers, _ := s.playerRepo.GetByTeamID(m.AwayTeamID)
+		// Ensure squads exist so goals, assists and cards get player names
+		homePlayers, err := s.squadForTeam(m.HomeTeamID)
+		if err != nil {
+			return nil, err
+		}
+		awayPlayers, err := s.squadForTeam(m.AwayTeamID)
+		if err != nil {
+			return nil, err
+		}
 
 		// Generate events
 		events := GenerateMatchEvents(m.ID, *homeTeam, *awayTeam, homePlayers, awayPlayers, score)
@@ -120,7 +126,7 @@ func (s *matchService) PlayAll(leagueID int) error {
 		return err
 	}
 	if len(weeks) == 0 {
-		return fmt.Errorf("all matches have already been played")
+		return s.leagueRepo.UpdateStatus(leagueID, "finished")
 	}
 
 	for _, w := range weeks {
@@ -154,8 +160,8 @@ func (s *matchService) UpdateMatchScore(id int, req model.UpdateMatchRequest) (*
 
 	homeTeam, _ := s.teamRepo.GetByID(match.HomeTeamID)
 	awayTeam, _ := s.teamRepo.GetByID(match.AwayTeamID)
-	homePlayers, _ := s.playerRepo.GetByTeamID(match.HomeTeamID)
-	awayPlayers, _ := s.playerRepo.GetByTeamID(match.AwayTeamID)
+	homePlayers, _ := s.squadForTeam(match.HomeTeamID)
+	awayPlayers, _ := s.squadForTeam(match.AwayTeamID)
 
 	events := GenerateMatchEvents(id, *homeTeam, *awayTeam, homePlayers, awayPlayers, SimulatedScore{
 		HomeGoals:   req.HomeGoals,
@@ -171,6 +177,35 @@ func (s *matchService) UpdateMatchScore(id int, req model.UpdateMatchRequest) (*
 	match.AwayGoals = req.AwayGoals
 	match.Events = events
 	return match, nil
+}
+
+func (s *matchService) squadForTeam(teamID int) ([]model.Player, error) {
+	players, err := s.playerRepo.GetByTeamID(teamID)
+	if err != nil {
+		return nil, err
+	}
+	if len(players) > 0 {
+		return matchdaySquad(filterRealSquad(players)), nil
+	}
+
+	defaultSquad := []struct {
+		Name     string
+		Position string
+	}{
+		{"Goalkeeper", "GK"},
+		{"Defender 1", "DEF"}, {"Defender 2", "DEF"}, {"Defender 3", "DEF"}, {"Defender 4", "DEF"},
+		{"Midfielder 1", "MID"}, {"Midfielder 2", "MID"}, {"Midfielder 3", "MID"},
+		{"Forward 1", "FWD"}, {"Forward 2", "FWD"}, {"Forward 3", "FWD"},
+	}
+
+	for _, slot := range defaultSquad {
+		p := model.Player{TeamID: teamID, Name: slot.Name, Position: slot.Position}
+		if err := s.playerRepo.Create(&p); err != nil {
+			return nil, err
+		}
+		players = append(players, p)
+	}
+	return players, nil
 }
 
 func (s *matchService) GetMatchEvents(matchID int) ([]model.MatchEvent, error) {
@@ -190,6 +225,50 @@ func (s *matchService) DeleteMatchEvent(matchID, eventID int) error {
 
 func (s *matchService) GetTopScorers(leagueID int) ([]model.TopScorer, error) {
 	return s.eventRepo.GetTopScorers(leagueID, 10)
+}
+
+func (s *matchService) RegenerateLeagueEvents(leagueID int) error {
+	matches, err := s.matchRepo.GetByLeagueID(leagueID)
+	if err != nil {
+		return err
+	}
+
+	for _, m := range matches {
+		if !m.Played {
+			continue
+		}
+
+		if err := s.eventRepo.DeleteByMatchID(m.ID); err != nil {
+			return err
+		}
+
+		homeTeam, err := s.teamRepo.GetByID(m.HomeTeamID)
+		if err != nil {
+			return err
+		}
+		awayTeam, err := s.teamRepo.GetByID(m.AwayTeamID)
+		if err != nil {
+			return err
+		}
+		homePlayers, err := s.squadForTeam(m.HomeTeamID)
+		if err != nil {
+			return err
+		}
+		awayPlayers, err := s.squadForTeam(m.AwayTeamID)
+		if err != nil {
+			return err
+		}
+
+		score := ScoreFromTotals(m.HomeGoals, m.AwayGoals)
+		events := GenerateMatchEvents(m.ID, *homeTeam, *awayTeam, homePlayers, awayPlayers, score)
+		if len(events) == 0 {
+			continue
+		}
+		if err := s.eventRepo.CreateBatch(events); err != nil {
+			return fmt.Errorf("match %d: %w", m.ID, err)
+		}
+	}
+	return nil
 }
 
 func (s *matchService) GetTopAssists(leagueID int) ([]model.TopAssist, error) {

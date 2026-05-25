@@ -174,7 +174,36 @@ export default function Stats() {
   const [assists, setAssists] = useState([])
   const [mostCards, setMostCards] = useState([])
   const [loading, setLoading] = useState(false)
+  const [recalculating, setRecalculating] = useState(false)
   const [headerRef, headerVisible] = useReveal()
+
+  const fetchStats = (id) => {
+    setLoading(true)
+    return Promise.allSettled([
+      api.get(`/api/leagues/${id}/top-scorers`),
+      api.get(`/api/leagues/${id}/top-assists`),
+      api.get(`/api/leagues/${id}/most-cards`),
+    ])
+      .then(([sc, as, mc]) => {
+        setScorers(sc.status === 'fulfilled' ? (sc.value.data.data || []) : [])
+        setAssists(as.status === 'fulfilled' ? (as.value.data.data || []) : [])
+        setMostCards(mc.status === 'fulfilled' ? (mc.value.data.data || []) : [])
+      })
+      .finally(() => setLoading(false))
+  }
+
+  const recalculateStats = async () => {
+    if (!selectedId || recalculating) return
+    setRecalculating(true)
+    try {
+      await api.post(`/api/leagues/${selectedId}/regenerate-events`)
+      await fetchStats(selectedId)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setRecalculating(false)
+    }
+  }
 
   useEffect(() => {
     api.get('/api/leagues').then(r => {
@@ -189,18 +218,7 @@ export default function Stats() {
   useEffect(() => {
     if (!selectedId) return
     setSearchParams({ league: String(selectedId) }, { replace: true })
-    setLoading(true)
-    Promise.allSettled([
-      api.get(`/api/leagues/${selectedId}/top-scorers`),
-      api.get(`/api/leagues/${selectedId}/top-assists`),
-      api.get(`/api/leagues/${selectedId}/most-cards`),
-    ])
-      .then(([sc, as, mc]) => {
-        setScorers(sc.status === 'fulfilled' ? (sc.value.data.data || []) : [])
-        setAssists(as.status === 'fulfilled' ? (as.value.data.data || []) : [])
-        setMostCards(mc.status === 'fulfilled' ? (mc.value.data.data || []) : [])
-      })
-      .finally(() => setLoading(false))
+    fetchStats(selectedId)
   }, [selectedId])
 
   const leagueName = leagues.find(l => l.id === selectedId)?.name
@@ -251,6 +269,23 @@ export default function Stats() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
                 <div className="spin" />
                 <span className="label">Loading…</span>
+              </div>
+            )}
+            {selectedId && !loading && (
+              <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                <button
+                  type="button"
+                  className="stat-list-btn"
+                  disabled={recalculating}
+                  onClick={recalculateStats}
+                >
+                  {recalculating ? 'Recalculating…' : 'Recalculate player stats'}
+                </button>
+                {scorers.length === 0 && (
+                  <span style={{ fontSize: 11, color: 'rgba(237,232,220,0.35)', lineHeight: 1.5 }}>
+                    Teams have goals but no scorers? Recalculate to assign them to real squad players.
+                  </span>
+                )}
               </div>
             )}
           </div>

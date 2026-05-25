@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strings"
 )
 
 // Goal model calibrated against ESPN Süper Lig 2025-26 full season (297 matches):
@@ -26,6 +27,16 @@ type SimulatedScore struct {
 	AwayOwnGoals int // conceded by away → counts for home
 	HomeExtra    int // uzatma golleri
 	AwayExtra    int
+}
+
+// ScoreFromTotals rebuilds events from stored match scores.
+func ScoreFromTotals(homeGoals, awayGoals int) SimulatedScore {
+	return SimulatedScore{
+		HomeGoals:   homeGoals,
+		AwayGoals:   awayGoals,
+		HomeRegular: homeGoals,
+		AwayRegular: awayGoals,
+	}
 }
 
 // SimulateMatch returns the final score for a match.
@@ -191,24 +202,28 @@ func GenerateMatchEvents(
 ) []model.MatchEvent {
 	var events []model.MatchEvent
 	usedMinutes := map[int]bool{}
+	homeScorers := map[int]int{}
+	awayScorers := map[int]int{}
+	homeAssists := map[int]int{}
+	awayAssists := map[int]int{}
 
 	for i := 0; i < score.HomeRegular; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "goal"))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, homeScorers, homeAssists, usedMinutes, "goal"))
 	}
 	for i := 0; i < score.AwayRegular; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "goal"))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, awayScorers, awayAssists, usedMinutes, "goal"))
 	}
 	for i := 0; i < score.HomeOwnGoals; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "own_goal"))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, homeTeam, homePlayers, homeScorers, homeAssists, usedMinutes, "own_goal"))
 	}
 	for i := 0; i < score.AwayOwnGoals; i++ {
-		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "own_goal"))
+		events = append(events, buildGoalEvent(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, awayScorers, awayAssists, usedMinutes, "own_goal"))
 	}
 	for i := 0; i < score.HomeExtra; i++ {
-		events = append(events, buildGoalEventAtMinute(matchID, homeTeam, awayTeam, homeTeam, homePlayers, usedMinutes, "goal", randomExtraMinute(usedMinutes)))
+		events = append(events, buildGoalEventAtMinute(matchID, homeTeam, awayTeam, homeTeam, homePlayers, homeScorers, homeAssists, usedMinutes, "goal", randomExtraMinute(usedMinutes)))
 	}
 	for i := 0; i < score.AwayExtra; i++ {
-		events = append(events, buildGoalEventAtMinute(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, usedMinutes, "goal", randomExtraMinute(usedMinutes)))
+		events = append(events, buildGoalEventAtMinute(matchID, homeTeam, awayTeam, awayTeam, awayPlayers, awayScorers, awayAssists, usedMinutes, "goal", randomExtraMinute(usedMinutes)))
 	}
 
 	events = append(events, generateCards(matchID, homeTeam, homePlayers, usedMinutes)...)
@@ -257,12 +272,13 @@ func buildGoalEventAtMinute(
 	homeTeam, awayTeam model.Team,
 	team model.Team,
 	players []model.Player,
+	scorerCounts, assistCounts map[int]int,
 	usedMinutes map[int]bool,
 	eventType string,
 	minute int,
 ) model.MatchEvent {
 	usedMinutes[minute] = true
-	return buildGoalEventCore(matchID, homeTeam, awayTeam, team, players, eventType, minute)
+	return buildGoalEventCore(matchID, homeTeam, awayTeam, team, players, scorerCounts, assistCounts, eventType, minute)
 }
 
 func buildGoalEvent(
@@ -270,11 +286,12 @@ func buildGoalEvent(
 	homeTeam, awayTeam model.Team,
 	team model.Team,
 	players []model.Player,
+	scorerCounts, assistCounts map[int]int,
 	usedMinutes map[int]bool,
 	eventType string,
 ) model.MatchEvent {
 	minute := randomMinute(usedMinutes)
-	return buildGoalEventCore(matchID, homeTeam, awayTeam, team, players, eventType, minute)
+	return buildGoalEventCore(matchID, homeTeam, awayTeam, team, players, scorerCounts, assistCounts, eventType, minute)
 }
 
 func buildGoalEventCore(
@@ -282,10 +299,17 @@ func buildGoalEventCore(
 	homeTeam, awayTeam model.Team,
 	team model.Team,
 	players []model.Player,
+	scorerCounts, assistCounts map[int]int,
 	eventType string,
 	minute int,
 ) model.MatchEvent {
-	scorer := randomScorer(players)
+	var scorer *model.Player
+	switch eventType {
+	case "own_goal":
+		scorer = pickOwnGoalScorer(players)
+	default:
+		scorer = pickScorer(players, scorerCounts)
+	}
 
 	e := model.MatchEvent{
 		MatchID:  matchID,
@@ -304,7 +328,7 @@ func buildGoalEventCore(
 		rng := rand.New(rand.NewSource(replaySeed(minute, e.PlayerID, team.ID)))
 		method = PickGoalMethod(rng, eventType, "")
 		if GoalMethodUsesAssist(method) {
-			if assister := randomAssister(players, scorer); assister != nil {
+			if assister := pickAssister(players, scorer, assistCounts); assister != nil {
 				e.AssistPlayerID = &assister.ID
 				e.AssistPlayerName = assister.Name
 			}
@@ -414,57 +438,152 @@ func pickCardedPlayer(players []model.Player, yellows map[int]int, sentOff map[i
 	return &p
 }
 
-func randomScorer(players []model.Player) *model.Player {
-	return randomWeighted(players, map[string]float64{
-		"FWD": 0.50, "MID": 0.30, "DEF": 0.15, "GK": 0.05,
+func pickScorer(players []model.Player, counts map[int]int) *model.Player {
+	pool := scoringPool(players, false)
+	return pickWeightedPlayer(pool, counts, func(p model.Player, _ int) float64 {
+		return scorerWeight(p, players)
 	})
 }
 
-func randomAssister(players []model.Player, scorer *model.Player) *model.Player {
-	var pool []model.Player
+func pickAssister(players []model.Player, scorer *model.Player, counts map[int]int) *model.Player {
 	scorerID := 0
 	if scorer != nil {
 		scorerID = scorer.ID
 	}
+	var pool []model.Player
 	for _, p := range players {
-		if p.ID != scorerID && (p.Position == "MID" || p.Position == "FWD" || p.Position == "DEF") {
+		if p.ID == scorerID {
+			continue
+		}
+		if p.Position == "MID" || p.Position == "FWD" {
 			pool = append(pool, p)
 		}
 	}
 	if len(pool) == 0 {
-		return nil
+		pool = scoringPool(players, true)
 	}
-	return randomWeighted(pool, map[string]float64{
-		"FWD": 0.35, "MID": 0.55, "DEF": 0.10,
+	return pickWeightedPlayer(pool, counts, func(p model.Player, _ int) float64 {
+		return assisterWeight(p, players)
 	})
 }
 
-func randomWeighted(players []model.Player, weights map[string]float64) *model.Player {
+func scoringPool(players []model.Player, allowDefenders bool) []model.Player {
+	var pool []model.Player
+	for _, p := range players {
+		switch p.Position {
+		case "FWD", "MID":
+			pool = append(pool, p)
+		case "DEF":
+			if allowDefenders {
+				pool = append(pool, p)
+			}
+		}
+	}
+	if len(pool) == 0 {
+		return players
+	}
+	return pool
+}
+
+func pickOwnGoalScorer(players []model.Player) *model.Player {
+	counts := map[int]int{}
+	return pickWeightedPlayer(players, counts, func(p model.Player, already int) float64 {
+		posW := map[string]float64{"DEF": 55, "MID": 28, "FWD": 12, "GK": 5}[p.Position]
+		if posW == 0 {
+			posW = 20
+		}
+		return posW
+	})
+}
+
+func scorerWeight(p model.Player, squad []model.Player) float64 {
+	posW := map[string]float64{"FWD": 72, "MID": 22, "DEF": 3, "GK": 0}[p.Position]
+	if posW == 0 {
+		posW = 10
+	}
+	return posW * playerScoringTalent(p, squad)
+}
+
+func assisterWeight(p model.Player, squad []model.Player) float64 {
+	posW := map[string]float64{"MID": 58, "FWD": 38, "DEF": 4}[p.Position]
+	if posW == 0 {
+		posW = 10
+	}
+	return posW * playerScoringTalent(p, squad)
+}
+
+func playerScoringTalent(p model.Player, squad []model.Player) float64 {
+	talent := 0.88 + float64((p.ID*2654435761)%100)/100.0*0.24
+	fwdRank, midRank := scoringRanks(squad)
+
+	switch p.Position {
+	case "FWD":
+		switch fwdRank[p.ID] {
+		case 0:
+			talent *= 1.65
+		case 1:
+			talent *= 1.22
+		default:
+			talent *= 0.88
+		}
+		if strings.HasSuffix(p.Name, " 1") {
+			talent *= 1.12
+		}
+	case "MID":
+		switch midRank[p.ID] {
+		case 0:
+			talent *= 1.18
+		case 1:
+			talent *= 1.08
+		default:
+			talent *= 0.94
+		}
+	}
+	return talent
+}
+
+func pickWeightedPlayer(
+	players []model.Player,
+	counts map[int]int,
+	weightFn func(model.Player, int) float64,
+) *model.Player {
 	if len(players) == 0 {
 		return nil
 	}
 	total := 0.0
-	for _, p := range players {
-		w := weights[p.Position]
-		if w == 0 {
-			w = 0.1
-		}
+	weights := make([]float64, len(players))
+	for i, p := range players {
+		w := weightFn(p, counts[p.ID])
+		weights[i] = w
 		total += w
 	}
+	if total <= 0 {
+		cp := players[rand.Intn(len(players))]
+		counts[cp.ID]++
+		return &cp
+	}
 	r := rand.Float64() * total
-	for _, p := range players {
-		w := weights[p.Position]
-		if w == 0 {
-			w = 0.1
-		}
-		r -= w
+	for i, p := range players {
+		r -= weights[i]
 		if r <= 0 {
+			counts[p.ID]++
 			cp := p
 			return &cp
 		}
 	}
 	cp := players[len(players)-1]
+	counts[cp.ID]++
 	return &cp
+}
+
+func randomScorer(players []model.Player) *model.Player {
+	counts := map[int]int{}
+	return pickScorer(players, counts)
+}
+
+func randomAssister(players []model.Player, scorer *model.Player) *model.Player {
+	counts := map[int]int{}
+	return pickAssister(players, scorer, counts)
 }
 
 func randomMinute(used map[int]bool) int {

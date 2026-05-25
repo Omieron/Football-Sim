@@ -126,4 +126,5 @@ type MatchService interface {
 	GetTopScorers(leagueID int) ([]TopScorer, error)
 	GetTopAssists(leagueID int) ([]TopAssist, error)
 	GetMostCards(leagueID int) ([]MostCards, error)
+	RegenerateLeagueEvents(leagueID int) error
 }

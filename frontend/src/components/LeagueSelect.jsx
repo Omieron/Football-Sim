@@ -10,7 +10,7 @@ export default function LeagueSelect({
   if (leagues.length === 1) {
     if (variant === 'hero') {
       return (
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--cream)', marginBottom: 6 }}>
+        <div className="league-select-hero league-select-hero-static">
           {leagues[0].name}
         </div>
       )
@@ -29,6 +29,7 @@ export default function LeagueSelect({
         className="league-select-hero"
         value={value || ''}
         onChange={e => onChange(Number(e.target.value))}
+        aria-label="Select league"
       >
         {leagues.map(l => (
           <option key={l.id} value={l.id}>{l.name}</option>
