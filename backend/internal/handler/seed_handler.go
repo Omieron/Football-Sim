@@ -21,8 +21,13 @@ func (h *SeedHandler) GetLeagues(c *gin.Context) {
 		Code string `json:"code"`
 		Name string `json:"name"`
 	}
+	seen := make(map[string]struct{}, len(seeder.AllLeagues))
 	leagues := make([]leagueInfo, 0, len(seeder.AllLeagues))
 	for _, l := range seeder.AllLeagues {
+		if _, ok := seen[l.ESPNCode]; ok {
+			continue
+		}
+		seen[l.ESPNCode] = struct{}{}
 		leagues = append(leagues, leagueInfo{Code: l.ESPNCode, Name: l.Name})
 	}
 	c.JSON(http.StatusOK, gin.H{"data": leagues})

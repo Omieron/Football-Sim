@@ -222,3 +222,32 @@ func (r *matchEventRepository) DeleteByMatchID(matchID int) error {
 	_, err := r.db.Exec(`DELETE FROM match_events WHERE match_id = $1`, matchID)
 	return err
 }
+
+func (r *matchEventRepository) GetTopScorers(leagueID int, limit int) ([]model.TopScorer, error) {
+	query := `
+		SELECT p.name, t.name, COALESCE(t.crest_url,''), COUNT(*) as goals
+		FROM match_events me
+		JOIN matches m  ON m.id  = me.match_id
+		JOIN teams   t  ON t.id  = me.team_id
+		JOIN players p  ON p.id  = me.player_id
+		WHERE m.league_id = $1 AND me.type = 'goal'
+		GROUP BY p.name, t.name, t.crest_url
+		ORDER BY goals DESC
+		LIMIT $2`
+
+	rows, err := r.db.Query(query, leagueID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var scorers []model.TopScorer
+	for rows.Next() {
+		var s model.TopScorer
+		if err := rows.Scan(&s.PlayerName, &s.TeamName, &s.CrestURL, &s.Goals); err != nil {
+			return nil, err
+		}
+		scorers = append(scorers, s)
+	}
+	return scorers, nil
+}

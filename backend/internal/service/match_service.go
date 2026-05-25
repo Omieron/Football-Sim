@@ -163,3 +163,7 @@ func (s *matchService) UpdateMatchScore(id int, req model.UpdateMatchRequest) (*
 func (s *matchService) GetMatchEvents(matchID int) ([]model.MatchEvent, error) {
 	return s.eventRepo.GetByMatchID(matchID)
 }
+
+func (s *matchService) GetTopScorers(leagueID int) ([]model.TopScorer, error) {
+	return s.eventRepo.GetTopScorers(leagueID, 10)
+}

@@ -111,6 +111,21 @@ func (h *MatchHandler) UpdateScore(c *gin.Context) {
 	})
 }
 
+// GET /api/leagues/:id/top-scorers
+func (h *MatchHandler) GetTopScorers(c *gin.Context) {
+	leagueID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid league id"})
+		return
+	}
+	scorers, err := h.matchService.GetTopScorers(leagueID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": scorers})
+}
+
 // GET /api/matches/:id/events
 func (h *MatchHandler) GetEvents(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))

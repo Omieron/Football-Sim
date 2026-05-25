@@ -32,6 +32,13 @@ type MatchEvent struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+type TopScorer struct {
+	PlayerName string `json:"player_name"`
+	TeamName   string `json:"team_name"`
+	CrestURL   string `json:"crest_url"`
+	Goals      int    `json:"goals"`
+}
+
 type UpdateMatchRequest struct {
 	HomeGoals int `json:"home_goals" binding:"min=0"`
 	AwayGoals int `json:"away_goals" binding:"min=0"`
@@ -54,6 +61,7 @@ type MatchEventRepository interface {
 	GetByMatchID(matchID int) ([]MatchEvent, error)
 	CreateBatch(events []MatchEvent) error
 	DeleteByMatchID(matchID int) error
+	GetTopScorers(leagueID int, limit int) ([]TopScorer, error)
 }
 
 // MatchService interface
@@ -63,4 +71,5 @@ type MatchService interface {
 	PlayAll(leagueID int) error
 	UpdateMatchScore(id int, req UpdateMatchRequest) (*Match, error)
 	GetMatchEvents(matchID int) ([]MatchEvent, error)
+	GetTopScorers(leagueID int) ([]TopScorer, error)
 }

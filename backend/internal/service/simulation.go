@@ -55,13 +55,15 @@ func GenerateMatchEvents(
 		minute := randomMinute(usedMinutes)
 		player := randomPlayer(homePlayers)
 		e := model.MatchEvent{
-			MatchID: matchID,
-			TeamID:  homeTeam.ID,
-			Type:    "goal",
-			Minute:  minute,
+			MatchID:  matchID,
+			TeamID:   homeTeam.ID,
+			TeamName: homeTeam.Name,
+			Type:     "goal",
+			Minute:   minute,
 		}
 		if player != nil {
-			e.PlayerID = &player.ID
+			e.PlayerID   = &player.ID
+			e.PlayerName = player.Name
 		}
 		events = append(events, e)
 	}
@@ -71,18 +73,20 @@ func GenerateMatchEvents(
 		minute := randomMinute(usedMinutes)
 		player := randomPlayer(awayPlayers)
 		e := model.MatchEvent{
-			MatchID: matchID,
-			TeamID:  awayTeam.ID,
-			Type:    "goal",
-			Minute:  minute,
+			MatchID:  matchID,
+			TeamID:   awayTeam.ID,
+			TeamName: awayTeam.Name,
+			Type:     "goal",
+			Minute:   minute,
 		}
 		if player != nil {
-			e.PlayerID = &player.ID
+			e.PlayerID   = &player.ID
+			e.PlayerName = player.Name
 		}
 		events = append(events, e)
 	}
 
-	// Yellow cards — 0 to 3 per team
+	// Cards — 0 to 3 per team
 	events = append(events, generateCards(matchID, homeTeam, homePlayers, usedMinutes)...)
 	events = append(events, generateCards(matchID, awayTeam, awayPlayers, usedMinutes)...)
 
@@ -110,25 +114,29 @@ func generateCards(
 		minute := randomMinute(usedMinutes)
 
 		e := model.MatchEvent{
-			MatchID: matchID,
-			TeamID:  team.ID,
-			Type:    "yellow_card",
-			Minute:  minute,
+			MatchID:  matchID,
+			TeamID:   team.ID,
+			TeamName: team.Name,
+			Type:     "yellow_card",
+			Minute:   minute,
 		}
 
 		if player != nil {
-			e.PlayerID = &player.ID
+			e.PlayerID   = &player.ID
+			e.PlayerName = player.Name
 			playerYellows[player.ID]++
 
 			// 2 yellows = red card
 			if playerYellows[player.ID] == 2 {
 				redMinute := randomMinute(usedMinutes)
 				red := model.MatchEvent{
-					MatchID:  matchID,
-					TeamID:   team.ID,
-					PlayerID: &player.ID,
-					Type:     "red_card",
-					Minute:   redMinute,
+					MatchID:    matchID,
+					TeamID:     team.ID,
+					TeamName:   team.Name,
+					PlayerID:   &player.ID,
+					PlayerName: player.Name,
+					Type:       "red_card",
+					Minute:     redMinute,
 				}
 				events = append(events, red)
 			}
@@ -141,13 +149,15 @@ func generateCards(
 		player := randomPlayer(players)
 		minute := randomMinute(usedMinutes)
 		e := model.MatchEvent{
-			MatchID: matchID,
-			TeamID:  team.ID,
-			Type:    "red_card",
-			Minute:  minute,
+			MatchID:  matchID,
+			TeamID:   team.ID,
+			TeamName: team.Name,
+			Type:     "red_card",
+			Minute:   minute,
 		}
 		if player != nil {
-			e.PlayerID = &player.ID
+			e.PlayerID   = &player.ID
+			e.PlayerName = player.Name
 		}
 		events = append(events, e)
 	}
