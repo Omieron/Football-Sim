@@ -24,18 +24,22 @@ export default function Import() {
   const [headerRef, headerVisible] = useReveal()
 
   async function loadLeagues() {
-    const r = await api.get('/api/admin/espn-leagues')
-    const seen = new Set()
-    const unique = (r.data.data || []).filter(l => {
-      if (seen.has(l.code)) return false
-      seen.add(l.code)
-      return true
-    })
-    setLeagues(unique)
-    setSelected(prev => prev.filter(code => {
-      const league = unique.find(l => l.code === code)
-      return league && !league.imported
-    }))
+    try {
+      const r = await api.get('/api/admin/espn-leagues')
+      const seen = new Set()
+      const unique = (r.data.data || []).filter(l => {
+        if (seen.has(l.code)) return false
+        seen.add(l.code)
+        return true
+      })
+      setLeagues(unique)
+      setSelected(prev => prev.filter(code => {
+        const league = unique.find(l => l.code === code)
+        return league && !league.imported
+      }))
+    } catch {
+      // keep existing leagues list on transient errors
+    }
   }
 
   useEffect(() => { loadLeagues() }, [])

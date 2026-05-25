@@ -161,13 +161,12 @@ func (s *Seeder) Run(codes []string) (Result, error) {
 	if err != nil {
 		return result, fmt.Errorf("checking imported leagues: %w", err)
 	}
-	for _, league := range leagues {
-		if _, ok := imported[league.ESPNCode]; ok {
-			return result, fmt.Errorf("league already imported: %s (%s)", league.Name, league.ESPNCode)
-		}
-	}
 
 	for _, league := range leagues {
+		if _, ok := imported[league.ESPNCode]; ok {
+			log.Printf("Skipping %s — already imported", league.Name)
+			continue
+		}
 		log.Printf("Fetching teams for %s...", league.Name)
 
 		// Upsert the real-world competition record
@@ -294,8 +293,7 @@ func (s *Seeder) upsertTeam(name, shortName, crestURL string, attack, defense, c
 		SET short_name     = EXCLUDED.short_name,
 		    crest_url      = EXCLUDED.crest_url,
 		    attack         = EXCLUDED.attack,
-		    defense        = EXCLUDED.defense,
-		    competition_id = EXCLUDED.competition_id
+		    defense        = EXCLUDED.defense
 		RETURNING id`,
 		name, shortName, crestURL, attack, defense, competitionID,
 	).Scan(&id)
